@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Survey Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        /* Custom styles for drag and drop and animations */
+        .dragging {
+            opacity: 0.5;
+        }
+        .drag-over {
+            transform: scale(1.02);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideDown {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .modal.show {
+            animation: fadeIn 0.3s;
+        }
+        .modal-content {
+            animation: slideDown 0.3s;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen overflow-hidden font-sans">
+    <!-- Toolbar -->
+    <div class="bg-teal-800 text-white px-5 py-4 flex justify-between items-center shadow-lg z-50">
+        <h1 class="text-xl font-semibold">Survey Builder</h1>
+        <div class="flex gap-2.5 items-center">
+            <input type="file" id="loadFileInput" accept=".json" class="hidden">
+            <button id="loadBtn" class="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-md text-sm flex items-center gap-2 transition-colors" title="Load survey từ file JSON">
+                <span>📂</span> Load
+            </button>
+            <button id="saveBtn" class="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-md text-sm flex items-center gap-2 transition-colors" title="Lưu survey thành file JSON">
+                <span>💾</span> Lưu
+            </button>
+            <button id="chartBtn" class="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-md text-sm flex items-center gap-2 transition-colors" title="Xem biểu đồ flow">
+                <span>📊</span> Xem chart
+            </button>
+            <button id="playBtn" class="bg-teal-700 hover:bg-teal-800 text-white px-5 py-2.5 rounded-md text-sm flex items-center gap-2 transition-colors" title="Chạy thử survey">
+                <span>▶</span> Chạy thử
+            </button>
+            <button id="addQuestionBtn" class="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-md text-sm flex items-center gap-2 transition-colors font-medium" title="Thêm câu hỏi mới">
+                <span class="text-xl font-bold">+</span> Thêm câu hỏi
+            </button>
+        </div>
+    </div>
+    
+    <!-- Main Container -->
+    <div class="flex h-[calc(100vh-60px)]">
+        <!-- Sidebar -->
+        <div class="w-[280px] bg-white border-r-2 border-gray-200 flex flex-col overflow-hidden">
+            <div class="p-4 border-b-2 border-gray-200 bg-gray-50">
+                <h2 class="text-base text-teal-900 mb-1 font-semibold">Danh sách câu hỏi</h2>
+                <p class="text-xs text-gray-500 m-0">Kéo thả để sắp xếp</p>
+            </div>
+            <div class="flex-1 overflow-y-auto p-2.5" id="questionsList">
+                <!-- Danh sách câu hỏi sẽ được thêm vào đây -->
+            </div>
+        </div>
+        
+        <!-- Content Panel -->
+        <div class="flex-1 h-[calc(100vh-60px)] relative overflow-auto bg-gray-50" id="contentPanel">
+            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center text-gray-500" id="emptyState">
+                <h2 class="text-2xl mb-2.5">Chưa có câu hỏi nào</h2>
+                <p class="text-sm">Nhấn nút "Thêm câu hỏi" để bắt đầu tạo survey</p>
+            </div>
+            <div class="h-full flex flex-col bg-white hidden" id="questionEditor">
+                <!-- Câu hỏi được chọn sẽ hiển thị ở đây -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal để xem graph chart -->
+    <div id="chartModal" class="hidden fixed z-[2000] left-0 top-0 w-full h-full bg-black bg-opacity-50 items-center justify-center">
+        <div class="bg-white rounded-lg w-[95%] max-w-[1200px] max-h-[90vh] shadow-xl">
+            <div class="bg-teal-700 text-white p-5 flex justify-between items-center rounded-t-lg">
+                <h2 class="text-xl m-0">Survey Flow Chart</h2>
+                <button id="closeChartBtn" class="bg-transparent text-white border-2 border-white border-opacity-30 w-8 h-8 rounded-full cursor-pointer text-2xl flex items-center justify-center transition-all hover:bg-white hover:bg-opacity-20 hover:border-white p-0 leading-none" title="Đóng">×</button>
+            </div>
+            <div class="p-5 bg-gray-50 rounded-b-lg max-h-[calc(90vh-80px)] overflow-hidden relative" id="chartBody">
+                <svg id="chartSvg" class="w-full h-[calc(90vh-120px)] min-h-[500px] bg-white border border-gray-300 rounded"></svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal để chạy survey -->
+    <div id="surveyModal" class="hidden fixed z-[2000] left-0 top-0 w-full h-full bg-black bg-opacity-50 items-center justify-center">
+        <div class="bg-white rounded-lg w-[90%] max-w-[700px] max-h-[90vh] shadow-xl">
+            <div class="bg-teal-800 text-white p-5 flex justify-between items-center rounded-t-lg">
+                <h2 class="text-xl m-0">Survey Preview</h2>
+                <button id="closeSurveyBtn" class="bg-transparent text-white border-2 border-white border-opacity-30 w-8 h-8 rounded-full cursor-pointer text-2xl flex items-center justify-center transition-all hover:bg-white hover:bg-opacity-20 hover:border-white p-0 leading-none" title="Đóng">×</button>
+            </div>
+            <div class="p-10 bg-white rounded-b-lg max-h-[calc(90vh-80px)] overflow-y-auto" id="surveyBody">
+                <!-- Nội dung survey sẽ được hiển thị ở đây -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal để chọn câu hỏi để link -->
+    <div id="linkModal" class="hidden fixed z-[2000] left-0 top-0 w-full h-full bg-black bg-opacity-50 items-center justify-center">
+        <div class="bg-white rounded-lg w-[90%] max-w-[500px] max-h-[80vh] shadow-xl">
+            <div class="p-5 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-lg text-teal-900">Chọn câu hỏi để liên kết</h2>
+                <span class="text-gray-500 text-3xl font-bold cursor-pointer leading-none transition-colors hover:text-teal-900 close-modal">&times;</span>
+            </div>
+            <div class="p-5 max-h-[60vh] overflow-y-auto">
+                <div id="questionList" class="flex flex-col gap-2.5">
+                    <!-- Danh sách câu hỏi sẽ được thêm vào đây -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
