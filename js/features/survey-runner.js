@@ -1,4 +1,13 @@
 import { state, getNode, resetSurveyState, addToSurveyHistory } from '../state/store.js';
+
+// Debug helper
+function debugNode(nodeId) {
+    console.log('Looking for node:', nodeId);
+    console.log('Available nodes:', state.nodes.map(n => ({ id: n.id, question: n.question.substring(0, 20) })));
+    const found = getNode(nodeId);
+    console.log('Found node:', found);
+    return found;
+}
 import { dom } from '../config/dom-elements.js';
 import { hasAnyLink } from '../models/node.js';
 import { showModal, hideModal } from '../ui/modals.js';
@@ -17,20 +26,32 @@ export function startSurvey() {
         return;
     }
     
-    // Start from the first question
-    state.currentSurveyNodeId = state.nodes[0].id;
+    // Reset survey state first
     resetSurveyState();
-    showSurveyQuestion(state.currentSurveyNodeId);
+    
+    // Start from the first question
+    const firstNodeId = state.nodes[0].id;
+    console.log('Starting survey with node:', firstNodeId, 'Total nodes:', state.nodes.length);
+    state.currentSurveyNodeId = firstNodeId;
+    showSurveyQuestion(firstNodeId);
     showModal(dom.surveyModal);
 }
 
 // Show survey question
 export function showSurveyQuestion(nodeId) {
+    console.log('showSurveyQuestion called with nodeId:', nodeId);
+    console.log('Current state.nodes:', state.nodes.length, 'nodes');
     const node = getNode(nodeId);
     if (!node) {
+        console.error('❌ Node not found!', {
+            nodeId,
+            availableIds: state.nodes.map(n => n.id),
+            availableQuestions: state.nodes.map(n => n.question.substring(0, 30))
+        });
         showSurveyEnd();
         return;
     }
+    console.log('✅ Node found:', node.question.substring(0, 30));
     
     // Check if this is an end node (no links)
     const isEndNode = !hasAnyLink(node);
@@ -39,19 +60,29 @@ export function showSurveyQuestion(nodeId) {
     if (node.isInfoNode) {
         if (isEndNode) {
             // End node - show end button
-            dom.surveyBody.innerHTML = `
-                <div class="mb-8 text-center p-10">
-                    <div class="text-xl text-yellow-900 bg-yellow-50 p-5 rounded-lg border-2 border-yellow-400 mb-8">${node.question || 'Thông báo chưa có nội dung'}</div>
-                    <div class="mt-8">
-                        <button class="bg-teal-700 hover:bg-teal-800 border-2 border-teal-700 hover:border-teal-800 text-white w-full rounded-lg px-5 py-4 text-base cursor-pointer transition-all font-semibold text-base px-8 py-4" onclick="window.showSurveyEndHandler()">
-                            ✓ Kết thúc survey
-                        </button>
-                    </div>
-                </div>
-            `;
+    const surveyBody = document.getElementById('surveyBody');
+    if (!surveyBody) {
+        console.error('surveyBody element not found!');
+        return;
+    }
+    surveyBody.innerHTML = `
+        <div class="mb-8 text-center p-10">
+            <div class="text-xl text-yellow-900 bg-yellow-50 p-5 rounded-lg border-2 border-yellow-400 mb-8">${node.question || 'Thông báo chưa có nội dung'}</div>
+            <div class="mt-8">
+                <button class="bg-teal-700 hover:bg-teal-800 border-2 border-teal-700 hover:border-teal-800 text-white w-full rounded-lg px-5 py-4 text-base cursor-pointer transition-all font-semibold text-base px-8 py-4" onclick="window.showSurveyEndHandler()">
+                    ✓ Kết thúc survey
+                </button>
+            </div>
+        </div>
+    `;
         } else {
             // Has nextQuestion link
-            dom.surveyBody.innerHTML = `
+            const surveyBody = document.getElementById('surveyBody');
+            if (!surveyBody) {
+                console.error('surveyBody element not found!');
+                return;
+            }
+            surveyBody.innerHTML = `
                 <div class="mb-8 text-center p-10">
                     <div class="text-xl text-yellow-900 bg-yellow-50 p-5 rounded-lg border-2 border-yellow-400 mb-8">${node.question || 'Thông báo chưa có nội dung'}</div>
                     <div class="mt-8">
@@ -81,7 +112,12 @@ export function showSurveyQuestion(nodeId) {
     if (validAnswers.length === 0) {
         if (isEndNode) {
             // End node - show end button
-            dom.surveyBody.innerHTML = `
+            const surveyBody = document.getElementById('surveyBody');
+            if (!surveyBody) {
+                console.error('surveyBody element not found!');
+                return;
+            }
+            surveyBody.innerHTML = `
                 <div class="mb-8">
                     <div class="text-2xl font-semibold text-teal-900 mb-6 leading-snug">${node.question || 'Câu hỏi chưa có nội dung'}</div>
                     <div class="mt-8">
@@ -109,7 +145,12 @@ export function showSurveyQuestion(nodeId) {
     // Show hint if some answers have links and question also has nextQuestion
     const showNextQuestionHint = node.nextQuestion && hasAnswerLinks && answersWithoutLinks.length > 0;
     
-    dom.surveyBody.innerHTML = `
+    const surveyBody = document.getElementById('surveyBody');
+    if (!surveyBody) {
+        console.error('surveyBody element not found!');
+        return;
+    }
+    surveyBody.innerHTML = `
         <div class="mb-8">
             <div class="text-2xl font-semibold text-teal-900 mb-6 leading-snug">${node.question || 'Câu hỏi chưa có nội dung'}</div>
             <div class="flex flex-col gap-3">
@@ -199,7 +240,12 @@ export function selectSurveyAnswer(nodeId, answerIndex) {
 
 // Show survey end
 export function showSurveyEnd() {
-    dom.surveyBody.innerHTML = `
+    const surveyBody = document.getElementById('surveyBody');
+    if (!surveyBody) {
+        console.error('surveyBody element not found!');
+        return;
+    }
+    surveyBody.innerHTML = `
         <div class="text-center p-10">
             <h3 class="text-2xl text-teal-700 mb-4">✓ Survey hoàn thành!</h3>
             <p class="text-base text-gray-500 mb-6">Cảm ơn bạn đã tham gia survey.</p>
@@ -239,7 +285,12 @@ export function showReviewAnswers() {
         `;
     }).join('');
     
-    dom.surveyBody.innerHTML = `
+    const surveyBody = document.getElementById('surveyBody');
+    if (!surveyBody) {
+        console.error('surveyBody element not found!');
+        return;
+    }
+    surveyBody.innerHTML = `
         <div class="p-5">
             <div class="text-center mb-8 pb-5 border-b-2 border-gray-200">
                 <h3 class="text-2xl text-teal-900 mb-2.5">📋 Xem lại câu trả lời</h3>
