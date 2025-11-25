@@ -1,0 +1,13 @@
+{
+  "name": "smart-survey-tool",
+  "version": "1.0.0",
+  "description": "Smart Survey Builder Tool",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["survey", "builder"],
+  "author": "",
+  "license": "MIT"
+}
+
