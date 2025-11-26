@@ -2,12 +2,13 @@
 import { initDOMElements, dom } from './config/dom-elements.js';
 import { initModalHandlers } from './ui/modals.js';
 import { createNewNode } from './services/node-service.js';
-import { startSurvey, showSurveyEnd, showReviewAnswers, closeSurvey, goToNextQuestion, selectSurveyAnswer } from './features/survey-runner.js';
+import { startSurvey, showSurveyEnd, showReviewAnswers, closeSurvey, goToNextQuestion, selectSurveyAnswer, submitMultipleChoice } from './features/survey-runner.js';
 import { exportSurvey, handleFileLoad } from './services/file-service.js';
 import { openChartModal, closeChartModal } from './features/chart-visualizer.js';
-import { closeLinkModal, openNextQuestionModal, unlinkNextQuestion, openLinkModal } from './services/link-service.js';
+import { closeLinkModal, openNextQuestionModal, unlinkNextQuestion, openLinkModal, openRuleLinkModal, unlinkAnswer } from './services/link-service.js';
 import { deleteNode, toggleNodeType } from './services/node-service.js';
-import { addAnswer, updateAnswer, deleteAnswer } from './services/answer-service.js';
+import { addAnswer, updateAnswer, deleteAnswer, updateAnswerPriority } from './services/answer-service.js';
+import { toggleMultipleChoice, addRule, deleteRule, addAnswerToRule, removeAnswerFromRule, updateRuleLink, moveRuleUp, moveRuleDown, updateRuleAnswerByIndex, removeAnswerFromRuleByIndex, addAnswerToRuleDropdown } from './services/rule-service.js';
 import { updateQuestionContent } from './ui/question-editor.js';
 import { showEmptyState } from './ui/question-editor.js';
 import { updateQuestionsList } from './ui/sidebar.js';
@@ -43,6 +44,7 @@ function initApp() {
     window.updateAnswerHandler = updateAnswer;
     window.deleteAnswerHandler = deleteAnswer;
     window.openLinkModalHandler = openLinkModal;
+    window.unlinkAnswerHandler = unlinkAnswer;
     window.openNextQuestionModalHandler = openNextQuestionModal;
     window.unlinkNextQuestionHandler = unlinkNextQuestion;
     window.startSurveyHandler = startSurvey;
@@ -50,6 +52,22 @@ function initApp() {
     window.showReviewAnswersHandler = showReviewAnswers;
     window.goToNextQuestionHandler = goToNextQuestion;
     window.selectSurveyAnswerHandler = selectSurveyAnswer;
+    
+    // Multiple choice and rules handlers
+    window.toggleMultipleChoiceHandler = toggleMultipleChoice;
+    window.addRuleHandler = addRule;
+    window.deleteRuleHandler = deleteRule;
+    window.addAnswerToRuleHandler = addAnswerToRule;
+    window.removeAnswerFromRuleHandler = removeAnswerFromRule;
+    window.updateRuleLinkHandler = updateRuleLink;
+    window.moveRuleUpHandler = moveRuleUp;
+    window.moveRuleDownHandler = moveRuleDown;
+    window.openRuleLinkModalHandler = openRuleLinkModal;
+    window.updateRuleAnswerByIndexHandler = updateRuleAnswerByIndex;
+    window.removeAnswerFromRuleByIndexHandler = removeAnswerFromRuleByIndex;
+    window.addAnswerToRuleDropdownHandler = addAnswerToRuleDropdown;
+    window.updateAnswerPriorityHandler = updateAnswerPriority;
+    window.submitMultipleChoiceHandler = submitMultipleChoice;
 }
 
 // Start app when DOM is ready

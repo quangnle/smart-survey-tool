@@ -5,6 +5,7 @@ export const state = {
     selectedNodeId: null,
     currentLinkingAnswer: null,
     currentLinkingNode: null,
+    currentLinkingRuleIndex: null, // For linking rules
     // Survey state
     currentSurveyNodeId: null,
     surveyHistory: []

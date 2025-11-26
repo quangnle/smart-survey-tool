@@ -8,6 +8,8 @@ export function createNode(question = '', isInfoNode = false) {
         answers: [],
         nextQuestion: null,
         isInfoNode: isInfoNode,
+        isMultipleChoice: false, // Allow multiple answer selection
+        rules: [], // Link rules for multiple choice: [{answerIndices: [0,1], linkedTo: 'node-id', order: 0}]
         position: { 
             x: 100 + state.nodes.length * 50, 
             y: 100 + state.nodes.length * 50 

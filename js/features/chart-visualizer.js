@@ -29,9 +29,12 @@ export function renderChart() {
     const width = svg.node().getBoundingClientRect().width;
     const height = svg.node().getBoundingClientRect().height;
     
-    // Create arrow marker for links
-    svg.append('defs').append('marker')
-        .attr('id', 'arrowhead')
+    // Create arrow markers for different link types
+    const markers = svg.append('defs');
+    
+    // Arrow marker for answer links (gray)
+    markers.append('marker')
+        .attr('id', 'arrowhead-answer')
         .attr('viewBox', '0 -5 10 10')
         .attr('refX', 25)
         .attr('refY', 0)
@@ -41,6 +44,32 @@ export function renderChart() {
         .append('path')
         .attr('d', 'M0,-5L10,0L0,5')
         .attr('fill', '#64748b');
+    
+    // Arrow marker for rule links (purple)
+    markers.append('marker')
+        .attr('id', 'arrowhead-rule')
+        .attr('viewBox', '0 -5 10 10')
+        .attr('refX', 25)
+        .attr('refY', 0)
+        .attr('markerWidth', 6)
+        .attr('markerHeight', 6)
+        .attr('orient', 'auto')
+        .append('path')
+        .attr('d', 'M0,-5L10,0L0,5')
+        .attr('fill', '#9333ea'); // purple-600
+    
+    // Arrow marker for nextQuestion links (teal)
+    markers.append('marker')
+        .attr('id', 'arrowhead-next')
+        .attr('viewBox', '0 -5 10 10')
+        .attr('refX', 25)
+        .attr('refY', 0)
+        .attr('markerWidth', 6)
+        .attr('markerHeight', 6)
+        .attr('orient', 'auto')
+        .append('path')
+        .attr('d', 'M0,-5L10,0L0,5')
+        .attr('fill', '#14b8a6');
     
     // Prepare data for D3.js
     const nodeMap = new Map();
@@ -69,6 +98,31 @@ export function renderChart() {
                 });
             }
         });
+        
+        // Add rule links (for multiple choice)
+        if (node.rules && node.rules.length > 0) {
+            node.rules.forEach((rule, ruleIndex) => {
+                if (rule.linkedTo && rule.answerIndices && rule.answerIndices.length > 0) {
+                    // Create label showing which answers are in this rule
+                    const answerLabels = rule.answerIndices
+                        .filter(idx => idx >= 0 && node.answers[idx]) // Filter out placeholder indices
+                        .map(idx => {
+                            const answer = node.answers[idx];
+                            return answer.text.trim() || `Câu ${idx + 1}`;
+                        })
+                        .join(' + ');
+                    
+                    links_data.push({
+                        source: node.id,
+                        target: rule.linkedTo,
+                        answerText: `Rule ${ruleIndex + 1}: ${answerLabels}`,
+                        type: 'rule',
+                        ruleIndex: ruleIndex
+                    });
+                }
+            });
+        }
+        
         // Add nextQuestion links
         if (node.nextQuestion) {
             links_data.push({
@@ -87,16 +141,39 @@ export function renderChart() {
         .force('center', d3.forceCenter(width / 2, height / 2))
         .force('collision', d3.forceCollide().radius(60));
     
-    // Create links
+    // Create curved link generator
+    const linkGenerator = d3.link(d3.curveBasis)
+        .x(d => d.x)
+        .y(d => d.y);
+    
+    // Create links as paths (curved)
     const link = svg.append('g')
         .attr('class', 'links')
-        .selectAll('line')
+        .selectAll('path')
         .data(links_data)
-        .enter().append('line')
+        .enter().append('path')
         .attr('class', d => `link link-${d.type}`)
-        .attr('stroke-width', d => d.type === 'next' ? 3 : 2)
-        .attr('stroke-dasharray', d => d.type === 'next' ? '5,5' : '0')
-        .attr('stroke', d => d.type === 'next' ? '#14b8a6' : '#64748b');
+        .attr('fill', 'none')
+        .attr('stroke-width', d => {
+            if (d.type === 'next') return 3;
+            if (d.type === 'rule') return 2.5;
+            return 2;
+        })
+        .attr('stroke-dasharray', d => {
+            if (d.type === 'next') return '5,5';
+            if (d.type === 'rule') return '3,3';
+            return '0';
+        })
+        .attr('stroke', d => {
+            if (d.type === 'next') return '#14b8a6'; // teal-500
+            if (d.type === 'rule') return '#9333ea'; // purple-600
+            return '#64748b'; // gray-500
+        })
+        .attr('marker-end', d => {
+            if (d.type === 'next') return 'url(#arrowhead-next)';
+            if (d.type === 'rule') return 'url(#arrowhead-rule)';
+            return 'url(#arrowhead-answer)';
+        });
     
     // Add link labels (answer text)
     const linkLabels = svg.append('g')
@@ -105,9 +182,17 @@ export function renderChart() {
         .data(links_data)
         .enter().append('text')
         .attr('class', 'link-label')
-        .text(d => d.answerText.length > 15 ? d.answerText.substring(0, 15) + '...' : d.answerText)
-        .style('font-size', '10px')
-        .style('fill', '#64748b')
+        .text(d => {
+            const text = d.answerText.length > 20 ? d.answerText.substring(0, 20) + '...' : d.answerText;
+            return text;
+        })
+        .style('font-size', d => d.type === 'rule' ? '9px' : '10px')
+        .style('fill', d => {
+            if (d.type === 'next') return '#14b8a6';
+            if (d.type === 'rule') return '#9333ea';
+            return '#64748b';
+        })
+        .style('font-weight', d => d.type === 'rule' ? 'bold' : 'normal')
         .style('pointer-events', 'none');
     
     // Create nodes
@@ -163,15 +248,20 @@ export function renderChart() {
     
     // Update positions on tick
     simulation.on('tick', () => {
-        link
-            .attr('x1', d => d.source.x)
-            .attr('y1', d => d.source.y)
-            .attr('x2', d => d.target.x)
-            .attr('y2', d => d.target.y);
+        // Update curved paths
+        link.attr('d', d => {
+            return linkGenerator({
+                source: { x: d.source.x, y: d.source.y },
+                target: { x: d.target.x, y: d.target.y }
+            });
+        });
         
-        linkLabels
-            .attr('x', d => (d.source.x + d.target.x) / 2)
-            .attr('y', d => (d.source.y + d.target.y) / 2);
+        // Update link labels position (on the curve)
+        linkLabels.attr('transform', d => {
+            const midX = (d.source.x + d.target.x) / 2;
+            const midY = (d.source.y + d.target.y) / 2;
+            return `translate(${midX},${midY})`;
+        });
         
         node.attr('transform', d => `translate(${d.x},${d.y})`);
     });

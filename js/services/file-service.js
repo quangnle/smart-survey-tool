@@ -17,13 +17,16 @@ export function exportSurvey() {
             order: index + 1,
             question: node.question,
             isInfoNode: node.isInfoNode || false,
+            isMultipleChoice: node.isMultipleChoice || false,
             nextQuestion: node.nextQuestion || null,
             nextQuestionText: node.nextQuestion ? state.nodes.find(n => n.id === node.nextQuestion)?.question || null : null,
+            rules: node.rules || [],
             answers: node.answers.map((answer, answerIndex) => ({
                 id: `answer-${node.id}-${answerIndex}`,
                 text: answer.text,
                 linkedTo: answer.linkedTo || null,
-                linkedToQuestion: answer.linkedTo ? state.nodes.find(n => n.id === answer.linkedTo)?.question || null : null
+                linkedToQuestion: answer.linkedTo ? state.nodes.find(n => n.id === answer.linkedTo)?.question || null : null,
+                priority: answer.priority !== undefined ? answer.priority : 0
             }))
         }))
     };

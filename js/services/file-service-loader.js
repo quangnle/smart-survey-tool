@@ -32,13 +32,16 @@ export function loadSurveyData(surveyData) {
             const node = createNode(qData.question || '', qData.isInfoNode || false);
             node.id = nodeId;
             node.nextQuestion = qData.nextQuestion || null;
+            node.isMultipleChoice = qData.isMultipleChoice || false;
+            node.rules = qData.rules || [];
             
             // Restore answers
             if (qData.answers && Array.isArray(qData.answers)) {
                 qData.answers.forEach((aData) => {
                     node.answers.push({
                         text: aData.text || '',
-                        linkedTo: aData.linkedTo || null
+                        linkedTo: aData.linkedTo || null,
+                        priority: aData.priority !== undefined ? aData.priority : 0
                     });
                 });
             }

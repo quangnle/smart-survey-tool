@@ -44,11 +44,44 @@ function linkAnswer(targetNodeId) {
         const node = getNode(state.currentLinkingNode);
         if (node && node.answers[state.currentLinkingAnswer]) {
             node.answers[state.currentLinkingAnswer].linkedTo = targetNodeId;
+            // Preserve scroll position when rendering answer
+            const answersList = document.getElementById(`answers-${state.currentLinkingNode}`);
+            let scrollTop = 0;
+            if (answersList) {
+                scrollTop = answersList.scrollTop;
+            }
             renderAnswer(state.currentLinkingNode, state.currentLinkingAnswer);
+            // Restore scroll position
+            if (answersList && scrollTop > 0) {
+                requestAnimationFrame(() => {
+                    answersList.scrollTop = scrollTop;
+                });
+            }
         }
     }
     
     closeLinkModal();
+}
+
+// Unlink answer
+export function unlinkAnswer(nodeId, answerIndex) {
+    const node = getNode(nodeId);
+    if (node && node.answers[answerIndex]) {
+        node.answers[answerIndex].linkedTo = null;
+        // Preserve scroll position when rendering answer
+        const answersList = document.getElementById(`answers-${nodeId}`);
+        let scrollTop = 0;
+        if (answersList) {
+            scrollTop = answersList.scrollTop;
+        }
+        renderAnswer(nodeId, answerIndex);
+        // Restore scroll position
+        if (answersList && scrollTop > 0) {
+            requestAnimationFrame(() => {
+                answersList.scrollTop = scrollTop;
+            });
+        }
+    }
 }
 
 // Close link modal
@@ -104,5 +137,59 @@ function linkNextQuestion(targetNodeId) {
 export function unlinkNextQuestion(nodeId) {
     updateNode(nodeId, { nextQuestion: null });
     renderQuestionEditor(nodeId); // Refresh editor
+}
+
+// Open modal to link rule to a question
+export function openRuleLinkModal(nodeId, ruleIndex) {
+    state.currentLinkingNode = nodeId;
+    state.currentLinkingRuleIndex = ruleIndex;
+    
+    // Populate question list
+    dom.questionList.innerHTML = '';
+    
+    const node = getNode(nodeId);
+    if (!node) return;
+    
+    // Filter out current node and nodes without questions
+    const availableNodes = state.nodes.filter(n => 
+        n.id !== nodeId && n.question.trim() !== ''
+    );
+    
+    if (availableNodes.length === 0) {
+        dom.questionList.innerHTML = '<p class="text-center text-gray-500 p-5">Chưa có câu hỏi nào để liên kết</p>';
+    } else {
+        availableNodes.forEach(targetNode => {
+            const questionItem = document.createElement('div');
+            questionItem.className = 'p-4 border-2 border-gray-200 rounded-md cursor-pointer transition-all hover:border-teal-600 hover:bg-gray-50';
+            questionItem.onclick = () => linkRule(targetNode.id);
+            
+            const preview = getQuestionPreview(targetNode.id);
+            questionItem.innerHTML = `<div class="text-sm text-teal-900">${preview}</div>`;
+            
+            dom.questionList.appendChild(questionItem);
+        });
+    }
+    
+    showModal(dom.linkModal);
+}
+
+// Link rule to a question
+function linkRule(targetNodeId) {
+    if (state.currentLinkingNode && state.currentLinkingRuleIndex !== null) {
+        const node = getNode(state.currentLinkingNode);
+        if (node && node.rules && node.rules[state.currentLinkingRuleIndex]) {
+            node.rules[state.currentLinkingRuleIndex].linkedTo = targetNodeId;
+            renderQuestionEditor(state.currentLinkingNode, true); // Preserve scroll
+        }
+    }
+    
+    closeRuleLinkModal();
+}
+
+// Close rule link modal
+function closeRuleLinkModal() {
+    hideModal(dom.linkModal);
+    state.currentLinkingNode = null;
+    state.currentLinkingRuleIndex = null;
 }
 
