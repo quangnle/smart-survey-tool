@@ -1,16 +1,18 @@
 import { state, getNode, resetSurveyState, addToSurveyHistory } from '../state/store.js';
-
-// Debug helper
-function debugNode(nodeId) {
-    console.log('Looking for node:', nodeId);
-    console.log('Available nodes:', state.nodes.map(n => ({ id: n.id, question: n.question.substring(0, 20) })));
-    const found = getNode(nodeId);
-    console.log('Found node:', found);
-    return found;
-}
 import { dom } from '../config/dom-elements.js';
 import { hasAnyLink } from '../models/node.js';
 import { showModal, hideModal } from '../ui/modals.js';
+
+// Helper function to format text with line breaks
+function formatTextWithLineBreaks(text) {
+    if (!text) return '';
+    // Escape HTML and convert line breaks to <br>
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br>');
+}
 
 // Start survey
 export function startSurvey() {
@@ -67,7 +69,7 @@ export function showSurveyQuestion(nodeId) {
     }
     surveyBody.innerHTML = `
         <div class="mb-8 text-center p-10">
-            <div class="text-xl text-yellow-900 bg-yellow-50 p-5 rounded-lg border-2 border-yellow-400 mb-8">${node.question || 'Thông báo chưa có nội dung'}</div>
+            <div class="text-xl text-yellow-900 bg-yellow-50 p-5 rounded-lg border-2 border-yellow-400 mb-8 whitespace-pre-wrap">${formatTextWithLineBreaks(node.question || 'Thông báo chưa có nội dung')}</div>
             <div class="mt-8">
                 <button class="bg-teal-700 hover:bg-teal-800 border-2 border-teal-700 hover:border-teal-800 text-white w-full rounded-lg px-5 py-4 text-base cursor-pointer transition-all font-semibold text-base px-8 py-4" onclick="window.showSurveyEndHandler()">
                     ✓ Kết thúc survey
@@ -84,7 +86,7 @@ export function showSurveyQuestion(nodeId) {
             }
             surveyBody.innerHTML = `
                 <div class="mb-8 text-center p-10">
-                    <div class="text-xl text-yellow-900 bg-yellow-50 p-5 rounded-lg border-2 border-yellow-400 mb-8">${node.question || 'Thông báo chưa có nội dung'}</div>
+                    <div class="text-xl text-yellow-900 bg-yellow-50 p-5 rounded-lg border-2 border-yellow-400 mb-8 whitespace-pre-wrap">${formatTextWithLineBreaks(node.question || 'Thông báo chưa có nội dung')}</div>
                     <div class="mt-8">
                         <button class="bg-teal-800 hover:bg-teal-900 border-2 border-teal-800 hover:border-teal-900 text-white w-full rounded-lg px-5 py-4 text-base cursor-pointer transition-all hover:translate-x-1 text-left font-sans" onclick="window.goToNextQuestionHandler('${nodeId}')">
                             Tiếp tục →
@@ -119,7 +121,7 @@ export function showSurveyQuestion(nodeId) {
             }
             surveyBody.innerHTML = `
                 <div class="mb-8">
-                    <div class="text-2xl font-semibold text-teal-900 mb-6 leading-snug">${node.question || 'Câu hỏi chưa có nội dung'}</div>
+                    <div class="text-2xl font-semibold text-teal-900 mb-6 leading-snug whitespace-pre-wrap">${formatTextWithLineBreaks(node.question || 'Câu hỏi chưa có nội dung')}</div>
                     <div class="mt-8">
                         <button class="bg-teal-700 hover:bg-teal-800 border-2 border-teal-700 hover:border-teal-800 text-white w-full rounded-lg px-5 py-4 text-base cursor-pointer transition-all font-semibold text-base px-8 py-4" onclick="window.showSurveyEndHandler()">
                             ✓ Kết thúc survey
@@ -152,7 +154,7 @@ export function showSurveyQuestion(nodeId) {
     }
     surveyBody.innerHTML = `
         <div class="mb-8">
-            <div class="text-2xl font-semibold text-teal-900 mb-6 leading-snug">${node.question || 'Câu hỏi chưa có nội dung'}</div>
+            <div class="text-2xl font-semibold text-teal-900 mb-6 leading-snug whitespace-pre-wrap">${formatTextWithLineBreaks(node.question || 'Câu hỏi chưa có nội dung')}</div>
             <div class="flex flex-col gap-3">
                 ${validAnswers.map((answer, index) => {
                     const hasLink = answer.linkedTo;
@@ -276,7 +278,7 @@ export function showReviewAnswers() {
                     <span class="inline-flex items-center justify-center w-8 h-8 bg-teal-800 text-white rounded-full font-bold text-sm flex-shrink-0">${index + 1}</span>
                     <span class="text-xs text-gray-500 font-semibold uppercase">${isInfoNode ? 'Thông báo' : 'Câu hỏi'} #${nodeIndex}</span>
                 </div>
-                <div class="text-base font-semibold text-teal-900 mb-3 leading-relaxed">${item.question || 'Chưa có nội dung'}</div>
+                <div class="text-base font-semibold text-teal-900 mb-3 leading-relaxed whitespace-pre-wrap">${formatTextWithLineBreaks(item.question || 'Chưa có nội dung')}</div>
                 <div class="text-sm text-teal-800 leading-relaxed p-3 bg-gray-50 rounded-md border-l-4 border-teal-700">
                     <strong class="text-teal-700 mr-2">${isInfoNode ? 'Nội dung:' : 'Đã chọn:'}</strong> 
                     <span>${item.answer}</span>
