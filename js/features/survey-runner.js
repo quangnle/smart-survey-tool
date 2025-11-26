@@ -22,7 +22,8 @@ function arraysMatchExactly(arr1, arr2) {
     return sorted1.every((val, idx) => val === sorted2[idx]);
 }
 
-// Process multiple choice selection with rules → priority → nextQuestion logic
+// Process multiple choice selection with rules → nextQuestion logic
+// Note: If no rule matches, use nextQuestion default (NOT answer links)
 function processMultipleChoiceSelection(nodeId, selectedAnswerIndices) {
     const node = getNode(nodeId);
     if (!node) return null;
@@ -32,18 +33,23 @@ function processMultipleChoiceSelection(nodeId, selectedAnswerIndices) {
         return 'end';
     }
     
-    // Sort selected indices for comparison
+    // Sort selected indices for comparison (exact match requires same elements)
     const sortedSelected = [...selectedAnswerIndices].sort((a, b) => a - b);
     
-    // 1. Check Rules (exact match)
+    // 1. Check Rules (exact match only)
     if (node.rules && node.rules.length > 0) {
         // Sort rules by order
         const sortedRules = [...node.rules].sort((a, b) => (a.order || 0) - (b.order || 0));
         
         for (const rule of sortedRules) {
             if (rule.answerIndices && rule.answerIndices.length > 0) {
-                const sortedRuleIndices = [...rule.answerIndices].sort((a, b) => a - b);
-                // Exact match check
+                // Filter out placeholder indices (-1)
+                const validRuleIndices = rule.answerIndices.filter(idx => idx >= 0);
+                if (validRuleIndices.length === 0) continue;
+                
+                const sortedRuleIndices = [...validRuleIndices].sort((a, b) => a - b);
+                
+                // Exact match check: selected must match rule exactly (same elements, same count)
                 if (arraysMatchExactly(sortedSelected, sortedRuleIndices)) {
                     if (rule.linkedTo) {
                         return rule.linkedTo;
@@ -53,31 +59,12 @@ function processMultipleChoiceSelection(nodeId, selectedAnswerIndices) {
         }
     }
     
-    // 2. Check priority (highest priority answer that was selected)
-    let highestPriority = -Infinity;
-    let highestPriorityAnswer = null;
-    
-    selectedAnswerIndices.forEach(answerIndex => {
-        const answer = node.answers[answerIndex];
-        if (answer) {
-            const priority = answer.priority !== undefined ? answer.priority : 0;
-            if (priority > highestPriority) {
-                highestPriority = priority;
-                highestPriorityAnswer = answer;
-            }
-        }
-    });
-    
-    if (highestPriorityAnswer && highestPriorityAnswer.linkedTo) {
-        return highestPriorityAnswer.linkedTo;
-    }
-    
-    // 3. Check nextQuestion default
+    // 2. No rule match → use nextQuestion default (NOT answer links)
     if (node.nextQuestion) {
         return node.nextQuestion;
     }
     
-    // 4. No match - end survey
+    // 3. No match and no nextQuestion → end survey
     return 'end';
 }
 
