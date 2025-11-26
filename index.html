@@ -50,13 +50,10 @@
                 <span>💾</span> Lưu
             </button>
             <button id="chartBtn" class="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-md text-sm flex items-center gap-2 transition-colors" title="Xem biểu đồ flow">
-                <span>📊</span> Xem chart
+                <span>📊</span> Xem biểu đồ câu hỏi
             </button>
             <button id="playBtn" class="bg-teal-700 hover:bg-teal-800 text-white px-5 py-2.5 rounded-md text-sm flex items-center gap-2 transition-colors" title="Chạy thử survey">
                 <span>▶</span> Chạy thử
-            </button>
-            <button id="addQuestionBtn" class="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-md text-sm flex items-center gap-2 transition-colors font-medium" title="Thêm câu hỏi mới">
-                <span class="text-xl font-bold">+</span> Thêm câu hỏi
             </button>
         </div>
     </div>
@@ -67,7 +64,10 @@
         <div class="w-[280px] bg-white border-r-2 border-gray-200 flex flex-col overflow-hidden">
             <div class="p-4 border-b-2 border-gray-200 bg-gray-50">
                 <h2 class="text-base text-teal-900 mb-1 font-semibold">Danh sách câu hỏi</h2>
-                <p class="text-xs text-gray-500 m-0">Kéo thả để sắp xếp</p>
+                <p class="text-xs text-gray-500 m-0 mb-3">Kéo thả để sắp xếp thứ tự câu hỏi</p>
+                <button id="addQuestionBtn" class="w-full bg-teal-600 hover:bg-teal-700 text-white px-4 py-2.5 rounded-md text-sm flex items-center justify-center gap-2 transition-colors font-medium" title="Thêm câu hỏi mới">
+                    <span class="text-xl font-bold">+</span> Thêm câu hỏi
+                </button>
             </div>
             <div class="flex-1 overflow-y-auto p-2.5" id="questionsList">
                 <!-- Danh sách câu hỏi sẽ được thêm vào đây -->

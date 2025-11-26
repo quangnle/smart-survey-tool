@@ -19,7 +19,6 @@ export function renderQuestionEditor(nodeId) {
     dom.questionEditor.innerHTML = `
         <div class="bg-teal-800 text-white px-5 py-4 flex justify-between items-center border-b-2 border-teal-900 shadow-md">
             <div class="text-lg font-semibold flex-1">${node.isInfoNode ? 'Thông báo' : 'Câu hỏi'} #${nodeIndex + 1}</div>
-            <button class="bg-transparent text-white border-2 border-white border-opacity-30 w-8 h-8 rounded-full cursor-pointer text-lg flex items-center justify-center transition-all hover:bg-red-500 hover:border-red-500 hover:scale-110 p-0 leading-none" onclick="window.deleteNodeHandler('${node.id}')" title="Xóa câu hỏi">×</button>
         </div>
         <div class="flex-1 p-8 overflow-y-auto">
             <div class="mb-5 p-4 bg-yellow-50 border-2 border-yellow-400 rounded-lg">
@@ -47,7 +46,9 @@ export function renderQuestionEditor(nodeId) {
                         ` : ''}
                     </div>
                 </div>
-                <p class="text-xs text-gray-500 m-0 italic">${node.isInfoNode ? 'Sau khi hiển thị thông báo, survey sẽ tự động chuyển đến câu hỏi này' : 'Nếu không có câu trả lời nào được chọn, survey sẽ chuyển đến câu hỏi này'}</p>
+                <p class="text-xs text-gray-500 m-0 italic">
+                    ${node.isInfoNode ? 'Sau khi hiển thị thông báo, survey sẽ tự động chuyển đến câu hỏi này' : 'Nếu câu trả lời được chọn không link đến câu hỏi nào tiếp theo, survey sẽ chuyển đến câu hỏi này'}
+                </p>
             </div>
             ${!node.isInfoNode ? `
             <div class="mt-8">
