@@ -40,8 +40,7 @@ export function loadSurveyData(surveyData) {
                 qData.answers.forEach((aData) => {
                     node.answers.push({
                         text: aData.text || '',
-                        linkedTo: aData.linkedTo || null,
-                        priority: aData.priority !== undefined ? aData.priority : 0
+                        linkedTo: aData.linkedTo || null
                     });
                 });
             }

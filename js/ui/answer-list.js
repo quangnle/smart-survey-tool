@@ -2,7 +2,7 @@ import { state, getNode } from '../state/store.js';
 import { getQuestionPreview } from '../models/node.js';
 import { handleAnswerDragStart, handleAnswerDragEnd, handleAnswerDragOver, handleAnswerDragEnter, handleAnswerDragLeave, handleAnswerDrop } from '../features/drag-drop.js';
 import { openLinkModal } from '../services/link-service.js';
-import { deleteAnswer, updateAnswerPriority } from '../services/answer-service.js';
+import { deleteAnswer } from '../services/answer-service.js';
 import { updateAnswer } from '../services/answer-service.js';
 
 // Render an answer
@@ -24,9 +24,6 @@ export function renderAnswer(nodeId, answerIndex) {
         ? getQuestionPreview(answer.linkedTo)
         : '';
     
-    const isMultipleChoice = node.isMultipleChoice || false;
-    const priorityValue = answer.priority !== undefined ? answer.priority : 0;
-    
     answerElement.innerHTML = `
         <div class="flex items-center gap-3">
             <div class="cursor-grab text-gray-500 text-base p-1 flex items-center justify-center flex-shrink-0 select-none" 
@@ -37,16 +34,6 @@ export function renderAnswer(nodeId, answerIndex) {
                    placeholder="Nhập câu trả lời..." 
                    value="${answer.text}"
                    oninput="window.updateAnswerHandler('${nodeId}', ${answerIndex}, this.value)">
-            ${isMultipleChoice ? `
-            <div class="flex items-center gap-1 flex-shrink-0">
-                <label class="text-xs text-gray-600">Priority:</label>
-                <input type="number" 
-                       class="w-16 px-2 py-1 border-2 border-gray-300 rounded-md text-xs text-center transition-colors focus:outline-none focus:border-teal-600" 
-                       value="${priorityValue}"
-                       min="0"
-                       onchange="window.updateAnswerPriorityHandler('${nodeId}', ${answerIndex}, this.value)">
-            </div>
-            ` : ''}
             <button class="bg-teal-700 hover:bg-teal-800 ${answer.linkedTo ? 'bg-teal-600' : ''} text-white w-8 h-8 rounded-md cursor-pointer text-base flex items-center justify-center transition-colors flex-shrink-0" 
                     onclick="window.openLinkModalHandler('${nodeId}', ${answerIndex})" 
                     title="${answer.linkedTo ? 'Thay đổi liên kết' : 'Liên kết tới câu hỏi khác'}">

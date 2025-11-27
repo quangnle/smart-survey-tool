@@ -7,8 +7,7 @@ export function addAnswer(nodeId) {
     if (node) {
         node.answers.push({
             text: '',
-            linkedTo: null,
-            priority: 0 // Priority for multiple choice (higher = more priority)
+            linkedTo: null
         });
         renderAnswer(nodeId, node.answers.length - 1);
         // Scroll to the new answer
@@ -37,14 +36,6 @@ export function deleteAnswer(nodeId, answerIndex) {
     if (node) {
         node.answers.splice(answerIndex, 1);
         renderAllAnswers(nodeId);
-    }
-}
-
-// Update answer priority
-export function updateAnswerPriority(nodeId, answerIndex, priority) {
-    const node = getNode(nodeId);
-    if (node && node.answers[answerIndex]) {
-        node.answers[answerIndex].priority = parseInt(priority) || 0;
     }
 }
 

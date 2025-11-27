@@ -25,8 +25,7 @@ export function exportSurvey() {
                 id: `answer-${node.id}-${answerIndex}`,
                 text: answer.text,
                 linkedTo: answer.linkedTo || null,
-                linkedToQuestion: answer.linkedTo ? state.nodes.find(n => n.id === answer.linkedTo)?.question || null : null,
-                priority: answer.priority !== undefined ? answer.priority : 0
+                linkedToQuestion: answer.linkedTo ? state.nodes.find(n => n.id === answer.linkedTo)?.question || null : null
             }))
         }))
     };
