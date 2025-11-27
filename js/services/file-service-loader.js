@@ -41,7 +41,10 @@ export function loadSurveyData(surveyData) {
                 qData.answers.forEach((aData) => {
                     node.answers.push({
                         text: aData.text || '',
-                        linkedTo: aData.linkedTo || null
+                        linkedTo: aData.linkedTo || null,
+                        isOther: aData.isOther || false,
+                        placeholder: aData.placeholder || null,
+                        maxLength: aData.maxLength || null
                     });
                 });
             }

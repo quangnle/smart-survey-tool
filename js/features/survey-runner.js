@@ -205,8 +205,9 @@ export function showSurveyQuestion(nodeId) {
         return;
     }
     
-    // Filter out empty answers
+    // Filter out empty answers (include "Other" answer in validAnswers)
     const validAnswers = node.answers.filter(a => a.text.trim() !== '');
+    const otherAnswer = node.answers.find(a => a.isOther === true);
     
     // If no answers, check for nextQuestion link
     if (validAnswers.length === 0) {
@@ -257,12 +258,14 @@ export function showSurveyQuestion(nodeId) {
     // Render based on multiple choice or single choice
     if (isMultipleChoice) {
         // Multiple choice: use checkboxes
+        const otherAnswerIndex = otherAnswer ? node.answers.indexOf(otherAnswer) : -1;
+        const regularAnswers = validAnswers.filter(a => !a.isOther);
         surveyBody.innerHTML = `
             <div class="mb-8">
                 <div class="text-2xl font-semibold text-teal-900 mb-6 leading-snug whitespace-pre-wrap">${formatTextWithLineBreaks(node.question || 'Câu hỏi chưa có nội dung')}</div>
                 <p class="text-sm text-gray-600 mb-4 italic">Bạn có thể chọn nhiều câu trả lời:</p>
                 <div class="flex flex-col gap-3 mb-6">
-                    ${validAnswers.map((answer, index) => {
+                    ${regularAnswers.map((answer, index) => {
                         const answerIndex = node.answers.indexOf(answer);
                         return `
                         <label class="flex items-center gap-3 p-4 bg-gray-50 border-2 border-gray-300 rounded-lg cursor-pointer hover:bg-gray-100 transition-all">
@@ -274,6 +277,17 @@ export function showSurveyQuestion(nodeId) {
                         </label>
                     `;
                     }).join('')}
+                    ${otherAnswer ? `
+                    <div class="p-4 bg-gray-50 border-2 border-gray-300 rounded-lg">
+                        <label class="text-base text-teal-900 mb-2 block">${otherAnswer.text || 'Khác'}:</label>
+                        <input type="text" 
+                               id="other-input-${nodeId}"
+                               class="w-full px-3 py-2 border-2 border-gray-300 rounded-md text-sm focus:outline-none focus:border-teal-600"
+                               placeholder="${otherAnswer.placeholder || 'ý kiến khác'}"
+                               maxlength="${otherAnswer.maxLength || 80}"
+                               oninput="window.handleOtherInputHandler('${nodeId}')">
+                    </div>
+                    ` : ''}
                 </div>
                 <button class="bg-teal-700 hover:bg-teal-800 text-white w-full rounded-lg px-5 py-4 text-base cursor-pointer transition-all font-semibold" 
                         onclick="window.submitMultipleChoiceHandler('${nodeId}')">
@@ -283,11 +297,13 @@ export function showSurveyQuestion(nodeId) {
         `;
     } else {
         // Single choice: use radio buttons (original behavior)
+        const otherAnswerIndex = otherAnswer ? node.answers.indexOf(otherAnswer) : -1;
+        const regularAnswers = validAnswers.filter(a => !a.isOther);
         surveyBody.innerHTML = `
             <div class="mb-8">
                 <div class="text-2xl font-semibold text-teal-900 mb-6 leading-snug whitespace-pre-wrap">${formatTextWithLineBreaks(node.question || 'Câu hỏi chưa có nội dung')}</div>
                 <div class="flex flex-col gap-3">
-                    ${validAnswers.map((answer, index) => {
+                    ${regularAnswers.map((answer, index) => {
                         const hasLink = answer.linkedTo;
                         const answerIndex = node.answers.indexOf(answer);
                         return `
@@ -297,6 +313,21 @@ export function showSurveyQuestion(nodeId) {
                         </button>
                     `;
                     }).join('')}
+                    ${otherAnswer ? `
+                    <div class="bg-gray-50 border-2 border-gray-300 rounded-lg p-4 mb-3">
+                        <label class="text-base text-teal-900 mb-2 block">${otherAnswer.text || 'Khác'}:</label>
+                        <input type="text" 
+                               id="other-input-${nodeId}"
+                               class="w-full px-3 py-2 border-2 border-gray-300 rounded-md text-sm focus:outline-none focus:border-teal-600"
+                               placeholder="${otherAnswer.placeholder || 'ý kiến khác'}"
+                               maxlength="${otherAnswer.maxLength || 80}"
+                               onkeypress="if(event.key === 'Enter') window.selectSurveyAnswerHandler('${nodeId}', ${otherAnswerIndex})">
+                    </div>
+                    <button class="bg-teal-700 hover:bg-teal-800 text-white w-full px-5 py-4 text-base cursor-pointer transition-all font-semibold rounded-lg"
+                            onclick="window.selectSurveyAnswerHandler('${nodeId}', ${otherAnswerIndex})">
+                        Tiếp tục →
+                    </button>
+                    ` : ''}
                 </div>
                 ${showNextQuestionHint ? `
                     <div class="mt-4 p-2.5 bg-teal-50 border-l-4 border-teal-600 rounded text-xs text-teal-900">
@@ -346,11 +377,27 @@ export function selectSurveyAnswer(nodeId, answerIndex) {
     
     const answer = node.answers[answerIndex];
     
+    // Handle "Other" answer - check if has text input
+    let answerText = answer.text;
+    if (answer.isOther) {
+        const otherInput = document.getElementById(`other-input-${nodeId}`);
+        const otherText = otherInput ? otherInput.value.trim() : '';
+        // If "Other" is selected but no text entered, don't proceed
+        if (!otherText) {
+            // Focus on the input to prompt user
+            if (otherInput) {
+                otherInput.focus();
+            }
+            return;
+        }
+        answerText = `${answer.text}: ${otherText}`;
+    }
+    
     // Add to history
     addToSurveyHistory({
         questionId: nodeId,
         question: node.question,
-        answer: answer.text,
+        answer: answerText,
         answerIndex: answerIndex
     });
     
@@ -372,6 +419,11 @@ export function selectSurveyAnswer(nodeId, answerIndex) {
     }
 }
 
+// Handle "Other" input text change (no longer needed for auto-check, but kept for compatibility)
+export function handleOtherInput(nodeId) {
+    // Input is always visible now, no need to toggle
+}
+
 // Submit multiple choice selection
 export function submitMultipleChoice(nodeId) {
     const node = getNode(nodeId);
@@ -386,11 +438,34 @@ export function submitMultipleChoice(nodeId) {
         if (checkbox.checked) {
             const answerIndex = parseInt(checkbox.dataset.answerIndex);
             selectedIndices.push(answerIndex);
-            if (node.answers[answerIndex]) {
-                selectedAnswers.push(node.answers[answerIndex].text);
+            const answer = node.answers[answerIndex];
+            if (answer) {
+                selectedAnswers.push(answer.text);
             }
         }
     });
+    
+    // Check "Other" input - if has text, consider it selected
+    const otherAnswer = node.answers.find(a => a.isOther);
+    if (otherAnswer) {
+        const otherInput = document.getElementById(`other-input-${nodeId}`);
+        const otherText = otherInput ? otherInput.value.trim() : '';
+        if (otherText) {
+            const otherIndex = node.answers.indexOf(otherAnswer);
+            if (!selectedIndices.includes(otherIndex)) {
+                selectedIndices.push(otherIndex);
+            }
+            // Add to selectedAnswers with the text input
+            const otherAnswerText = `${otherAnswer.text}: ${otherText}`;
+            // Remove old "Khác" if exists (without text) and add new one (with text)
+            const existingOtherIndex = selectedAnswers.findIndex(a => a === otherAnswer.text);
+            if (existingOtherIndex >= 0) {
+                selectedAnswers[existingOtherIndex] = otherAnswerText;
+            } else {
+                selectedAnswers.push(otherAnswerText);
+            }
+        }
+    }
     
     // Add to history
     addToSurveyHistory({

@@ -10,10 +10,13 @@ export function renderAnswer(nodeId, answerIndex) {
     const node = getNode(nodeId);
     if (!node || !node.answers[answerIndex]) return;
     
+    const answer = node.answers[answerIndex];
+    
+    // Skip rendering "Other" answer - it's rendered separately in question editor
+    if (answer.isOther) return;
+    
     const answersList = document.getElementById(`answers-${nodeId}`);
     if (!answersList) return;
-    
-    const answer = node.answers[answerIndex];
     const answerElement = document.createElement('div');
     answerElement.className = 'mb-3 p-3 bg-gray-50 rounded-lg transition-all cursor-grab border-2 border-transparent hover:bg-gray-100';
     answerElement.id = `answer-${nodeId}-${answerIndex}`;

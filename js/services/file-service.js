@@ -26,7 +26,10 @@ export function exportSurvey() {
                 id: `answer-${node.id}-${answerIndex}`,
                 text: answer.text,
                 linkedTo: answer.linkedTo || null,
-                linkedToQuestion: answer.linkedTo ? state.nodes.find(n => n.id === answer.linkedTo)?.question || null : null
+                linkedToQuestion: answer.linkedTo ? state.nodes.find(n => n.id === answer.linkedTo)?.question || null : null,
+                isOther: answer.isOther || false,
+                placeholder: answer.placeholder || null,
+                maxLength: answer.maxLength || null
             }))
         }))
     };

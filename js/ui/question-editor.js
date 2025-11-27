@@ -5,6 +5,8 @@ import { renderAnswer } from './answer-list.js';
 import { updateQuestionsList } from './sidebar.js';
 import { toggleMultipleChoice, addRule, deleteRule, addAnswerToRule, removeAnswerFromRule, updateRuleLink, moveRuleUp, moveRuleDown } from '../services/rule-service.js';
 import { openRuleLinkModal } from '../services/link-service.js';
+import { getOtherAnswer, toggleOtherAnswer, updateOtherAnswer } from '../services/answer-service.js';
+import { openLinkModal } from '../services/link-service.js';
 
 // Render question editor
 export function renderQuestionEditor(nodeId, preserveScroll = false) {
@@ -32,8 +34,8 @@ export function renderQuestionEditor(nodeId, preserveScroll = false) {
         : '';
     
     dom.questionEditor.innerHTML = `
-        <div class="bg-teal-800 text-white px-5 py-4 flex justify-between items-center border-b-2 border-teal-900 shadow-md">
-            <div class="text-lg font-semibold flex-1">${node.isInfoNode ? 'Thông báo' : 'Câu hỏi'} #${nodeIndex + 1}</div>
+        <div class="bg-teal-700 text-white px-5 py-4 flex justify-between items-center border-b-2 border-teal-800 shadow-md">
+            <div class="text-lg font-bold flex-1">${node.isInfoNode ? 'Thông báo' : 'Câu hỏi'} #${nodeIndex + 1}</div>
         </div>
         <div class="flex-1 p-8 overflow-y-auto">
             <div class="mb-5 p-4 bg-yellow-50 border-2 border-yellow-400 rounded-lg">
@@ -104,6 +106,67 @@ export function renderQuestionEditor(nodeId, preserveScroll = false) {
                     <span>+</span> Thêm câu trả lời
                 </button>
             </div>
+            ${!node.isInfoNode ? `
+            <div class="mt-6 p-4 bg-orange-50 border-2 border-orange-300 rounded-lg">
+                <label class="flex items-center gap-2.5 cursor-pointer text-sm text-orange-900 font-medium mb-3">
+                    <input type="checkbox" class="w-[18px] h-[18px] cursor-pointer accent-orange-500" ${getOtherAnswer(node.id) ? 'checked' : ''} onchange="window.toggleOtherAnswerHandler('${node.id}', this.checked)">
+                    <span>Cho phép câu trả lời "Khác"</span>
+                </label>
+                ${(() => {
+                    const otherAnswer = getOtherAnswer(node.id);
+                    if (!otherAnswer) return '';
+                    const otherIndex = node.answers.findIndex(a => a.isOther);
+                    const linkedToText = otherAnswer.linkedTo ? getQuestionPreview(otherAnswer.linkedTo) : '';
+                    const otherText = otherAnswer.text || 'Khác';
+                    const otherPlaceholder = otherAnswer.placeholder || 'ý kiến khác';
+                    const otherMaxLength = otherAnswer.maxLength || 80;
+                    return `
+                    <div class="mt-3 pt-3 border-t border-orange-300">
+                        <div class="grid grid-cols-3 gap-3 mb-3">
+                            <div>
+                                <label class="text-xs text-orange-900 font-semibold mb-1.5 block">Nhãn hiển thị:</label>
+                                <input type="text" 
+                                       class="w-full px-3 py-2 border-2 border-gray-300 rounded-md text-sm focus:outline-none focus:border-orange-500" 
+                                       value="${otherText.replace(/"/g, '&quot;')}"
+                                       placeholder="Khác"
+                                       onchange="window.updateOtherAnswerHandler('${node.id}', {text: this.value})">
+                            </div>
+                            <div>
+                                <label class="text-xs text-orange-900 font-semibold mb-1.5 block">Placeholder:</label>
+                                <input type="text" 
+                                       class="w-full px-3 py-2 border-2 border-gray-300 rounded-md text-sm focus:outline-none focus:border-orange-500" 
+                                       value="${otherPlaceholder.replace(/"/g, '&quot;')}"
+                                       placeholder="ý kiến khác"
+                                       onchange="window.updateOtherAnswerHandler('${node.id}', {placeholder: this.value})">
+                            </div>
+                            <div>
+                                <label class="text-xs text-orange-900 font-semibold mb-1.5 block">Giới hạn độ dài:</label>
+                                <input type="number" 
+                                       class="w-full px-3 py-2 border-2 border-gray-300 rounded-md text-sm focus:outline-none focus:border-orange-500" 
+                                       value="${otherMaxLength}"
+                                       min="1"
+                                       max="500"
+                                       onchange="window.updateOtherAnswerHandler('${node.id}', {maxLength: parseInt(this.value) || 80})">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button class="bg-teal-700 hover:bg-teal-800 ${otherAnswer.linkedTo ? 'bg-teal-600' : ''} text-white px-4 py-2 rounded-md text-xs transition-colors flex items-center gap-1" 
+                                    onclick="window.openLinkModalHandler('${node.id}', ${otherIndex})" 
+                                    title="Liên kết tới câu hỏi">
+                                ${otherAnswer.linkedTo ? '🔗 Đã link' : '🔗 Link câu hỏi'}
+                            </button>
+                            ${otherAnswer.linkedTo ? `
+                            <span class="text-xs text-teal-700 italic">→ ${linkedToText.replace(/"/g, '&quot;')}</span>
+                            <button class="bg-red-500 hover:bg-red-600 text-white w-5 h-5 rounded-full cursor-pointer text-xs flex items-center justify-center transition-colors" 
+                                    onclick="window.unlinkAnswerHandler('${node.id}', ${otherIndex})" 
+                                    title="Xóa liên kết">×</button>
+                            ` : ''}
+                        </div>
+                    </div>
+                    `;
+                })()}
+            </div>
+            ` : ''}
             ${node.isMultipleChoice ? `
             <div class="mt-8 p-5 bg-purple-50 rounded-lg border-2 border-purple-200">
                 <div class="flex justify-between items-center mb-4">
@@ -124,9 +187,11 @@ export function renderQuestionEditor(nodeId, preserveScroll = false) {
         </div>
     `;
     
-    // Render existing answers
+    // Render existing answers (excluding "Other" answer which is rendered separately)
     node.answers.forEach((answer, index) => {
-        renderAnswer(node.id, index);
+        if (!answer.isOther) {
+            renderAnswer(node.id, index);
+        }
     });
     
     dom.questionEditor.classList.remove('hidden');
@@ -180,10 +245,13 @@ function renderRulesList(node) {
         const actualIndex = node.rules.indexOf(rule);
         const ruleNumber = ruleIndex + 1;
         
-        // Get answer options for dropdown
+        // Get answer options for dropdown (include "Other" answer)
         const answerOptions = node.answers.map((answer, idx) => {
             const isSelected = rule.answerIndices.includes(idx);
-            const answerText = answer.text.trim() || `Câu trả lời ${idx + 1}`;
+            let answerText = answer.text.trim() || `Câu trả lời ${idx + 1}`;
+            if (answer.isOther) {
+                answerText = `${answerText} (Khác)`;
+            }
             return `<option value="${idx}" ${isSelected ? 'selected' : ''}>${answerText}</option>`;
         }).join('');
         
@@ -214,7 +282,10 @@ function renderRulesList(node) {
                                 onchange="if(this.value) window.addAnswerToRuleHandler('${node.id}', ${actualIndex}, parseInt(this.value)); this.value='';">
                             <option value="">-- Chọn câu trả lời --</option>
                             ${node.answers.map((answer, idx) => {
-                                const answerText = answer.text.trim() || `Câu trả lời ${idx + 1}`;
+                                let answerText = answer.text.trim() || `Câu trả lời ${idx + 1}`;
+                                if (answer.isOther) {
+                                    answerText = `${answerText} (Khác)`;
+                                }
                                 return `<option value="${idx}">${answerText}</option>`;
                             }).join('')}
                         </select>
@@ -240,10 +311,17 @@ function renderRulesList(node) {
                                 `;
                             }
                             
-                            const answerText = node.answers[answerIdx]?.text.trim() || `Câu trả lời ${answerIdx + 1}`;
+                            const answer = node.answers[answerIdx];
+                            let answerText = answer?.text.trim() || `Câu trả lời ${answerIdx + 1}`;
+                            if (answer?.isOther) {
+                                answerText = `${answerText} (Khác)`;
+                            }
                             const availableAnswers = node.answers.map((answer, idx) => {
                                 const isSelected = rule.answerIndices.includes(idx) && idx !== answerIdx && idx !== -1;
-                                const text = answer.text.trim() || `Câu trả lời ${idx + 1}`;
+                                let text = answer.text.trim() || `Câu trả lời ${idx + 1}`;
+                                if (answer.isOther) {
+                                    text = `${text} (Khác)`;
+                                }
                                 return `<option value="${idx}" ${isSelected ? 'disabled' : ''} ${idx === answerIdx ? 'selected' : ''}>${text}</option>`;
                             }).join('');
                             return `
