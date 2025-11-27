@@ -59,12 +59,22 @@ function processMultipleChoiceSelection(nodeId, selectedAnswerIndices) {
         }
     }
     
-    // 2. No rule match → use nextQuestion default (NOT answer links)
+    // 2. Check if user selected only 1 option and that option has a link
+    if (selectedAnswerIndices.length === 1) {
+        const selectedAnswerIndex = selectedAnswerIndices[0];
+        const selectedAnswer = node.answers[selectedAnswerIndex];
+        
+        if (selectedAnswer && selectedAnswer.linkedTo) {
+            return selectedAnswer.linkedTo;
+        }
+    }
+    
+    // 3. No rule match and no single answer link → use nextQuestion default
     if (node.nextQuestion) {
         return node.nextQuestion;
     }
     
-    // 3. No match and no nextQuestion → end survey
+    // 4. No match and no nextQuestion → end survey
     return 'end';
 }
 
@@ -321,10 +331,10 @@ export function selectSurveyAnswer(nodeId, answerIndex) {
         state.currentSurveyNodeId = node.nextQuestion;
         showSurveyQuestion(node.nextQuestion);
     } 
-    // 3. No link at all - this is an end node
+    // 3. No link at all - end survey immediately
     else {
-        // Show the same question again but with end button
-        showSurveyQuestion(nodeId);
+        state.currentSurveyNodeId = null;
+        showSurveyEnd();
     }
 }
 
