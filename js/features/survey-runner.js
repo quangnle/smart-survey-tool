@@ -14,6 +14,38 @@ function formatTextWithLineBreaks(text) {
         .replace(/\n/g, '<br>');
 }
 
+// Helper function to get info node styling based on type
+function getInfoNodeStyles(infoType) {
+    const type = infoType || 'warning';
+    const styles = {
+        normal: {
+            bg: 'bg-white',
+            border: 'border-gray-300',
+            text: 'text-gray-900',
+            borderColor: 'border-gray-300'
+        },
+        success: {
+            bg: 'bg-teal-50',
+            border: 'border-teal-400',
+            text: 'text-teal-900',
+            borderColor: 'border-teal-400'
+        },
+        warning: {
+            bg: 'bg-yellow-50',
+            border: 'border-yellow-400',
+            text: 'text-yellow-900',
+            borderColor: 'border-yellow-400'
+        },
+        danger: {
+            bg: 'bg-red-50',
+            border: 'border-red-400',
+            text: 'text-red-900',
+            borderColor: 'border-red-400'
+        }
+    };
+    return styles[type] || styles.warning;
+}
+
 // Helper function to check if two arrays match exactly (same elements, same order)
 function arraysMatchExactly(arr1, arr2) {
     if (arr1.length !== arr2.length) return false;
@@ -124,23 +156,25 @@ export function showSurveyQuestion(nodeId) {
     
     // Handle info node (content only, no answers)
     if (node.isInfoNode) {
+        const infoStyles = getInfoNodeStyles(node.infoType);
+        
         if (isEndNode) {
             // End node - show end button
-    const surveyBody = document.getElementById('surveyBody');
-    if (!surveyBody) {
-        console.error('surveyBody element not found!');
-        return;
-    }
-    surveyBody.innerHTML = `
-        <div class="mb-8 text-center p-10">
-            <div class="text-xl text-yellow-900 bg-yellow-50 p-5 rounded-lg border-2 border-yellow-400 mb-8 whitespace-pre-wrap">${formatTextWithLineBreaks(node.question || 'Thông báo chưa có nội dung')}</div>
-            <div class="mt-8">
-                <button class="bg-teal-700 hover:bg-teal-800 border-2 border-teal-700 hover:border-teal-800 text-white w-full rounded-lg px-5 py-4 text-base cursor-pointer transition-all font-semibold text-base px-8 py-4" onclick="window.showSurveyEndHandler()">
-                    ✓ Kết thúc survey
-                </button>
-            </div>
-        </div>
-    `;
+            const surveyBody = document.getElementById('surveyBody');
+            if (!surveyBody) {
+                console.error('surveyBody element not found!');
+                return;
+            }
+            surveyBody.innerHTML = `
+                <div class="mb-8 text-center p-10">
+                    <div class="text-xl ${infoStyles.text} ${infoStyles.bg} p-5 rounded-lg border-2 ${infoStyles.border} mb-8 whitespace-pre-wrap">${formatTextWithLineBreaks(node.question || 'Thông báo chưa có nội dung')}</div>
+                    <div class="mt-8">
+                        <button class="bg-teal-700 hover:bg-teal-800 border-2 border-teal-700 hover:border-teal-800 text-white w-full rounded-lg px-5 py-4 text-base cursor-pointer transition-all font-semibold text-base px-8 py-4" onclick="window.showSurveyEndHandler()">
+                            ✓ Kết thúc survey
+                        </button>
+                    </div>
+                </div>
+            `;
         } else {
             // Has nextQuestion link
             const surveyBody = document.getElementById('surveyBody');
@@ -150,7 +184,7 @@ export function showSurveyQuestion(nodeId) {
             }
             surveyBody.innerHTML = `
                 <div class="mb-8 text-center p-10">
-                    <div class="text-xl text-yellow-900 bg-yellow-50 p-5 rounded-lg border-2 border-yellow-400 mb-8 whitespace-pre-wrap">${formatTextWithLineBreaks(node.question || 'Thông báo chưa có nội dung')}</div>
+                    <div class="text-xl ${infoStyles.text} ${infoStyles.bg} p-5 rounded-lg border-2 ${infoStyles.border} mb-8 whitespace-pre-wrap">${formatTextWithLineBreaks(node.question || 'Thông báo chưa có nội dung')}</div>
                     <div class="mt-8">
                         <button class="bg-teal-800 hover:bg-teal-900 border-2 border-teal-800 hover:border-teal-900 text-white w-full rounded-lg px-5 py-4 text-base cursor-pointer transition-all hover:translate-x-1 text-left font-sans" onclick="window.goToNextQuestionHandler('${nodeId}')">
                             Tiếp tục →

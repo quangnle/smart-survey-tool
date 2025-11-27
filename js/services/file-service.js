@@ -17,6 +17,7 @@ export function exportSurvey() {
             order: index + 1,
             question: node.question,
             isInfoNode: node.isInfoNode || false,
+            infoType: node.infoType || 'warning',
             isMultipleChoice: node.isMultipleChoice || false,
             nextQuestion: node.nextQuestion || null,
             nextQuestionText: node.nextQuestion ? state.nodes.find(n => n.id === node.nextQuestion)?.question || null : null,

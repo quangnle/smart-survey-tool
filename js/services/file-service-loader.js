@@ -32,6 +32,7 @@ export function loadSurveyData(surveyData) {
             const node = createNode(qData.question || '', qData.isInfoNode || false);
             node.id = nodeId;
             node.nextQuestion = qData.nextQuestion || null;
+            node.infoType = qData.infoType || 'warning';
             node.isMultipleChoice = qData.isMultipleChoice || false;
             node.rules = qData.rules || [];
             

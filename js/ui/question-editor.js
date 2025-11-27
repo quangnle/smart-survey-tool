@@ -37,10 +37,33 @@ export function renderQuestionEditor(nodeId, preserveScroll = false) {
         </div>
         <div class="flex-1 p-8 overflow-y-auto">
             <div class="mb-5 p-4 bg-yellow-50 border-2 border-yellow-400 rounded-lg">
-                <label class="flex items-center gap-2.5 cursor-pointer text-sm text-yellow-900 font-medium">
+                <label class="flex items-center gap-2.5 cursor-pointer text-sm text-yellow-900 font-medium mb-3">
                     <input type="checkbox" class="w-[18px] h-[18px] cursor-pointer accent-yellow-500" ${node.isInfoNode ? 'checked' : ''} onchange="window.toggleNodeTypeHandler('${node.id}', this.checked)">
                     <span>Đây là node thông báo (chỉ hiển thị nội dung, không có câu trả lời)</span>
                 </label>
+                ${node.isInfoNode ? `
+                <div class="mt-3 pt-3 border-t border-yellow-300">
+                    <label class="text-xs text-yellow-900 font-semibold mb-2 block">Loại thông báo:</label>
+                    <div class="flex flex-wrap gap-2">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="infoType-${node.id}" value="normal" ${(node.infoType || 'warning') === 'normal' ? 'checked' : ''} onchange="window.updateInfoTypeHandler('${node.id}', 'normal')" class="w-4 h-4 cursor-pointer">
+                            <span class="text-xs px-3 py-1.5 rounded bg-white border-2 border-gray-300 text-gray-700">Bình thường</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="infoType-${node.id}" value="success" ${(node.infoType || 'warning') === 'success' ? 'checked' : ''} onchange="window.updateInfoTypeHandler('${node.id}', 'success')" class="w-4 h-4 cursor-pointer">
+                            <span class="text-xs px-3 py-1.5 rounded bg-teal-50 border-2 border-teal-400 text-teal-900">Tốt</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="infoType-${node.id}" value="warning" ${(node.infoType || 'warning') === 'warning' ? 'checked' : ''} onchange="window.updateInfoTypeHandler('${node.id}', 'warning')" class="w-4 h-4 cursor-pointer">
+                            <span class="text-xs px-3 py-1.5 rounded bg-yellow-50 border-2 border-yellow-400 text-yellow-900">Chú ý</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="infoType-${node.id}" value="danger" ${(node.infoType || 'warning') === 'danger' ? 'checked' : ''} onchange="window.updateInfoTypeHandler('${node.id}', 'danger')" class="w-4 h-4 cursor-pointer">
+                            <span class="text-xs px-3 py-1.5 rounded bg-red-50 border-2 border-red-400 text-red-900">Nguy hiểm</span>
+                        </label>
+                    </div>
+                </div>
+                ` : ''}
             </div>
             ${!node.isInfoNode ? `
             <div class="mb-5 p-4 bg-blue-50 border-2 border-blue-400 rounded-lg">

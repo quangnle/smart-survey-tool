@@ -6,7 +6,7 @@ import { startSurvey, showSurveyEnd, showReviewAnswers, closeSurvey, goToNextQue
 import { exportSurvey, handleFileLoad } from './services/file-service.js';
 import { openChartModal, closeChartModal } from './features/chart-visualizer.js';
 import { closeLinkModal, openNextQuestionModal, unlinkNextQuestion, openLinkModal, openRuleLinkModal, unlinkAnswer } from './services/link-service.js';
-import { deleteNode, toggleNodeType } from './services/node-service.js';
+import { deleteNode, toggleNodeType, updateInfoType } from './services/node-service.js';
 import { addAnswer, updateAnswer, deleteAnswer } from './services/answer-service.js';
 import { toggleMultipleChoice, addRule, deleteRule, addAnswerToRule, removeAnswerFromRule, updateRuleLink, moveRuleUp, moveRuleDown, updateRuleAnswerByIndex, removeAnswerFromRuleByIndex, addAnswerToRuleDropdown } from './services/rule-service.js';
 import { updateQuestionContent } from './ui/question-editor.js';
@@ -39,6 +39,7 @@ function initApp() {
     // Expose handlers to window for inline event handlers
     window.deleteNodeHandler = deleteNode;
     window.toggleNodeTypeHandler = toggleNodeType;
+    window.updateInfoTypeHandler = updateInfoType;
     window.updateQuestionHandler = updateQuestionContent;
     window.addAnswerHandler = addAnswer;
     window.updateAnswerHandler = updateAnswer;

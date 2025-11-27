@@ -44,9 +44,22 @@ export function toggleNodeType(nodeId, isInfoNode) {
         // Clear answers if switching to info node
         if (isInfoNode) {
             node.answers = [];
+            // Set default infoType if not set
+            if (!node.infoType) {
+                node.infoType = 'warning';
+            }
         }
         renderQuestionEditor(nodeId); // Refresh editor
         updateQuestionsList(); // Update sidebar
+    }
+}
+
+// Update info node type
+export function updateInfoType(nodeId, infoType) {
+    const node = getNode(nodeId);
+    if (node && node.isInfoNode) {
+        node.infoType = infoType;
+        renderQuestionEditor(nodeId, true); // Preserve scroll
     }
 }
 

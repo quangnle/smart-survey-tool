@@ -8,6 +8,7 @@ export function createNode(question = '', isInfoNode = false) {
         answers: [],
         nextQuestion: null,
         isInfoNode: isInfoNode,
+        infoType: 'warning', // Info node type: 'normal', 'success', 'warning', 'danger'
         isMultipleChoice: false, // Allow multiple answer selection
         rules: [], // Link rules for multiple choice: [{answerIndices: [0,1], linkedTo: 'node-id', order: 0}]
         position: { 
