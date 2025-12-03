@@ -36,6 +36,14 @@ export function loadSurveyData(surveyData) {
             node.isMultipleChoice = qData.isMultipleChoice || false;
             node.rules = qData.rules || [];
             
+            // Restore chart position if available
+            if (qData.position && qData.position.x && qData.position.y) {
+                node.position = {
+                    x: qData.position.x,
+                    y: qData.position.y
+                };
+            }
+            
             // Restore answers
             if (qData.answers && Array.isArray(qData.answers)) {
                 qData.answers.forEach((aData) => {

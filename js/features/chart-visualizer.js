@@ -29,6 +29,27 @@ export function renderChart() {
     const width = svg.node().getBoundingClientRect().width;
     const height = svg.node().getBoundingClientRect().height;
     
+    // Initialize default positions for nodes that don't have positions
+    // Use a grid layout as default
+    const nodesPerRow = Math.ceil(Math.sqrt(state.nodes.length));
+    const nodeSpacing = 200;
+    const startX = 150;
+    const startY = 150;
+    
+    state.nodes.forEach((node, index) => {
+        if (!node.position || !node.position.x || !node.position.y) {
+            const row = Math.floor(index / nodesPerRow);
+            const col = index % nodesPerRow;
+            node.position = {
+                x: startX + col * nodeSpacing,
+                y: startY + row * nodeSpacing
+            };
+        }
+        // Ensure position is within bounds
+        node.position.x = Math.max(50, Math.min(width - 50, node.position.x));
+        node.position.y = Math.max(50, Math.min(height - 50, node.position.y));
+    });
+    
     // Create arrow markers for different link types
     const markers = svg.append('defs');
     
@@ -71,7 +92,7 @@ export function renderChart() {
         .attr('d', 'M0,-5L10,0L0,5')
         .attr('fill', '#14b8a6');
     
-    // Prepare data for D3.js
+    // Prepare data for D3.js - use positions from nodes
     const nodeMap = new Map();
     state.nodes.forEach((node, index) => {
         nodeMap.set(node.id, {
@@ -79,7 +100,9 @@ export function renderChart() {
             label: node.isInfoNode ? `I${index + 1}` : `Q${index + 1}`,
             question: node.question || 'Chưa có nội dung',
             index: index,
-            isInfoNode: node.isInfoNode || false
+            isInfoNode: node.isInfoNode || false,
+            x: node.position.x,
+            y: node.position.y
         });
     });
     
@@ -134,17 +157,46 @@ export function renderChart() {
         }
     });
     
-    // Create force simulation
-    const simulation = d3.forceSimulation(nodes_data)
-        .force('link', d3.forceLink(links_data).id(d => d.id).distance(150))
-        .force('charge', d3.forceManyBody().strength(-300))
-        .force('center', d3.forceCenter(width / 2, height / 2))
-        .force('collision', d3.forceCollide().radius(60));
-    
     // Create curved link generator
     const linkGenerator = d3.link(d3.curveBasis)
         .x(d => d.x)
         .y(d => d.y);
+    
+    // Helper function to get node position by ID
+    function getNodePosition(nodeId) {
+        const node = nodes_data.find(n => n.id === nodeId);
+        if (node) {
+            return { x: node.x, y: node.y };
+        }
+        // Fallback: find in state.nodes
+        const stateNode = state.nodes.find(n => n.id === nodeId);
+        if (stateNode && stateNode.position) {
+            return { x: stateNode.position.x, y: stateNode.position.y };
+        }
+        return { x: 0, y: 0 };
+    }
+    
+    // Function to update links and labels
+    function updateLinks() {
+        // Update curved paths
+        link.attr('d', d => {
+            const sourcePos = getNodePosition(d.source);
+            const targetPos = getNodePosition(d.target);
+            return linkGenerator({
+                source: sourcePos,
+                target: targetPos
+            });
+        });
+        
+        // Update link labels position (on the curve)
+        linkLabels.attr('transform', d => {
+            const sourcePos = getNodePosition(d.source);
+            const targetPos = getNodePosition(d.target);
+            const midX = (sourcePos.x + targetPos.x) / 2;
+            const midY = (sourcePos.y + targetPos.y) / 2;
+            return `translate(${midX},${midY})`;
+        });
+    }
     
     // Create links as paths (curved)
     const link = svg.append('g')
@@ -202,6 +254,7 @@ export function renderChart() {
         .data(nodes_data)
         .enter().append('g')
         .attr('class', 'chart-node')
+        .attr('transform', d => `translate(${d.x},${d.y})`)
         .call(d3.drag()
             .on('start', dragstarted)
             .on('drag', dragged)
@@ -221,6 +274,7 @@ export function renderChart() {
             return '#115e59'; // teal-800
         })
         .style('stroke-width', d => d.id === state.selectedNodeId ? 3 : 2)
+        .style('cursor', 'move')
         .on('click', function(event, d) {
             // Select and edit this node
             renderQuestionEditor(d.id);
@@ -234,6 +288,7 @@ export function renderChart() {
         .style('font-size', '14px')
         .style('font-weight', 'bold')
         .style('fill', 'white')
+        .style('pointer-events', 'none')
         .text(d => d.label);
     
     // Add question preview below node
@@ -241,47 +296,50 @@ export function renderChart() {
         .attr('class', 'node-label')
         .attr('dy', 45)
         .style('text-anchor', 'middle')
+        .style('pointer-events', 'none')
         .text(d => {
             const text = d.question;
             return text.length > 20 ? text.substring(0, 20) + '...' : text;
         });
     
-    // Update positions on tick
-    simulation.on('tick', () => {
-        // Update curved paths
-        link.attr('d', d => {
-            return linkGenerator({
-                source: { x: d.source.x, y: d.source.y },
-                target: { x: d.target.x, y: d.target.y }
-            });
-        });
-        
-        // Update link labels position (on the curve)
-        linkLabels.attr('transform', d => {
-            const midX = (d.source.x + d.target.x) / 2;
-            const midY = (d.source.y + d.target.y) / 2;
-            return `translate(${midX},${midY})`;
-        });
-        
-        node.attr('transform', d => `translate(${d.x},${d.y})`);
-    });
+    // Initial render of links
+    updateLinks();
     
     // Drag functions
     function dragstarted(event, d) {
-        if (!event.active) simulation.alphaTarget(0.3).restart();
-        d.fx = d.x;
-        d.fy = d.y;
+        // Highlight the node being dragged
+        d3.select(this).raise().select('circle')
+            .style('stroke-width', 4);
     }
     
     function dragged(event, d) {
-        d.fx = event.x;
-        d.fy = event.y;
+        // Update node position
+        d.x = event.x;
+        d.y = event.y;
+        
+        // Update the node's position in state
+        const stateNode = state.nodes.find(n => n.id === d.id);
+        if (stateNode) {
+            stateNode.position = { x: d.x, y: d.y };
+        }
+        
+        // Update visual position
+        d3.select(this).attr('transform', `translate(${d.x},${d.y})`);
+        
+        // Update links connected to this node
+        updateLinks();
     }
     
     function dragended(event, d) {
-        if (!event.active) simulation.alphaTarget(0);
-        d.fx = null;
-        d.fy = null;
+        // Reset highlight
+        d3.select(this).select('circle')
+            .style('stroke-width', d.id === state.selectedNodeId ? 3 : 2);
+        
+        // Ensure position is saved
+        const stateNode = state.nodes.find(n => n.id === d.id);
+        if (stateNode) {
+            stateNode.position = { x: d.x, y: d.y };
+        }
     }
 }
 

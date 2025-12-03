@@ -22,6 +22,7 @@ export function exportSurvey() {
             nextQuestion: node.nextQuestion || null,
             nextQuestionText: node.nextQuestion ? state.nodes.find(n => n.id === node.nextQuestion)?.question || null : null,
             rules: node.rules || [],
+            position: node.position || null, // Save chart position
             answers: node.answers.map((answer, answerIndex) => ({
                 id: `answer-${node.id}-${answerIndex}`,
                 text: answer.text,
