@@ -1,4 +1,4 @@
-import { state, getNode, resetSurveyState, addToSurveyHistory } from '../state/store.js';
+import { state, getNode, resetSurveyState, addToSurveyHistory, getSurveyTitle, getSurveyDescription } from '../state/store.js';
 import { dom } from '../config/dom-elements.js';
 import { hasAnyLink } from '../models/node.js';
 import { showModal, hideModal } from '../ui/modals.js';
@@ -110,6 +110,23 @@ function processMultipleChoiceSelection(nodeId, selectedAnswerIndices) {
     return 'end';
 }
 
+// Helper function to render survey header (title and description)
+function renderSurveyHeader() {
+    const title = getSurveyTitle();
+    const description = getSurveyDescription();
+    
+    if (!title && !description) {
+        return '';
+    }
+    
+    return `
+        <div class="mb-8 pb-6 border-b-2 border-teal-200">
+            ${title ? `<h1 class="text-3xl font-bold text-teal-900 mb-3">${formatTextWithLineBreaks(title)}</h1>` : ''}
+            ${description ? `<p class="text-base text-gray-700 leading-relaxed whitespace-pre-wrap">${formatTextWithLineBreaks(description)}</p>` : ''}
+        </div>
+    `;
+}
+
 // Start survey
 export function startSurvey() {
     if (state.nodes.length === 0) {
@@ -154,6 +171,10 @@ export function showSurveyQuestion(nodeId) {
     // Check if this is an end node (no links)
     const isEndNode = !hasAnyLink(node);
     
+    // Check if this is the first question (to show header)
+    const isFirstQuestion = state.nodes.length > 0 && state.nodes[0].id === nodeId;
+    const headerHTML = isFirstQuestion ? renderSurveyHeader() : '';
+    
     // Handle info node (content only, no answers)
     if (node.isInfoNode) {
         const infoStyles = getInfoNodeStyles(node.infoType);
@@ -166,6 +187,7 @@ export function showSurveyQuestion(nodeId) {
                 return;
             }
             surveyBody.innerHTML = `
+                ${headerHTML}
                 <div class="mb-8 text-center p-10">
                     <div class="text-xl ${infoStyles.text} ${infoStyles.bg} p-5 rounded-lg border-2 ${infoStyles.border} mb-8 whitespace-pre-wrap">${formatTextWithLineBreaks(node.question || 'Thông báo chưa có nội dung')}</div>
                     <div class="mt-8">
@@ -183,6 +205,7 @@ export function showSurveyQuestion(nodeId) {
                 return;
             }
             surveyBody.innerHTML = `
+                ${headerHTML}
                 <div class="mb-8 text-center p-10">
                     <div class="text-xl ${infoStyles.text} ${infoStyles.bg} p-5 rounded-lg border-2 ${infoStyles.border} mb-8 whitespace-pre-wrap">${formatTextWithLineBreaks(node.question || 'Thông báo chưa có nội dung')}</div>
                     <div class="mt-8">
@@ -219,6 +242,7 @@ export function showSurveyQuestion(nodeId) {
                 return;
             }
             surveyBody.innerHTML = `
+                ${headerHTML}
                 <div class="mb-8">
                     <div class="text-2xl font-semibold text-teal-900 mb-6 leading-snug whitespace-pre-wrap">${formatTextWithLineBreaks(node.question || 'Câu hỏi chưa có nội dung')}</div>
                     <div class="mt-8">
@@ -261,6 +285,7 @@ export function showSurveyQuestion(nodeId) {
         const otherAnswerIndex = otherAnswer ? node.answers.indexOf(otherAnswer) : -1;
         const regularAnswers = validAnswers.filter(a => !a.isOther);
         surveyBody.innerHTML = `
+            ${headerHTML}
             <div class="mb-8">
                 <div class="text-2xl font-semibold text-teal-900 mb-6 leading-snug whitespace-pre-wrap">${formatTextWithLineBreaks(node.question || 'Câu hỏi chưa có nội dung')}</div>
                 <p class="text-sm text-gray-600 mb-4 italic">Bạn có thể chọn nhiều câu trả lời:</p>
@@ -300,6 +325,7 @@ export function showSurveyQuestion(nodeId) {
         const otherAnswerIndex = otherAnswer ? node.answers.indexOf(otherAnswer) : -1;
         const regularAnswers = validAnswers.filter(a => !a.isOther);
         surveyBody.innerHTML = `
+            ${headerHTML}
             <div class="mb-8">
                 <div class="text-2xl font-semibold text-teal-900 mb-6 leading-snug whitespace-pre-wrap">${formatTextWithLineBreaks(node.question || 'Câu hỏi chưa có nội dung')}</div>
                 <div class="flex flex-col gap-3">

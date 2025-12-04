@@ -12,6 +12,9 @@ export function exportSurvey() {
     const surveyData = {
         version: '1.0',
         createdAt: new Date().toISOString(),
+        title: state.surveyTitle || '',
+        description: state.surveyDescription || '',
+        linkLabelPositions: state.linkLabelPositions || {}, // Save chart label positions
         questions: state.nodes.map((node, index) => ({
             id: node.id,
             order: index + 1,

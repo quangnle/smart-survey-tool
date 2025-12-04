@@ -14,6 +14,10 @@ export const dom = {
     loadFileInput: document.getElementById('loadFileInput'),
     chartBtn: document.getElementById('chartBtn'),
     
+    // Survey metadata inputs
+    surveyTitleInput: document.getElementById('surveyTitleInput'),
+    surveyDescriptionInput: document.getElementById('surveyDescriptionInput'),
+    
     // Modals
     chartModal: document.getElementById('chartModal'),
     closeChartBtn: document.getElementById('closeChartBtn'),

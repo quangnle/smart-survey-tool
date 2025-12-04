@@ -6,6 +6,9 @@ export const state = {
     currentLinkingAnswer: null,
     currentLinkingNode: null,
     currentLinkingRuleIndex: null, // For linking rules
+    // Survey metadata
+    surveyTitle: '',
+    surveyDescription: '',
     // Survey state
     currentSurveyNodeId: null,
     surveyHistory: []
@@ -71,5 +74,22 @@ export function setLinkingState(nodeId, answerIndex) {
 export function clearLinkingState() {
     state.currentLinkingNode = null;
     state.currentLinkingAnswer = null;
+}
+
+// Survey metadata operations
+export function updateSurveyTitle(title) {
+    state.surveyTitle = title || '';
+}
+
+export function updateSurveyDescription(description) {
+    state.surveyDescription = description || '';
+}
+
+export function getSurveyTitle() {
+    return state.surveyTitle || '';
+}
+
+export function getSurveyDescription() {
+    return state.surveyDescription || '';
 }
 

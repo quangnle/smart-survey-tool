@@ -12,6 +12,7 @@ import { toggleMultipleChoice, addRule, deleteRule, addAnswerToRule, removeAnswe
 import { updateQuestionContent } from './ui/question-editor.js';
 import { showEmptyState } from './ui/question-editor.js';
 import { updateQuestionsList } from './ui/sidebar.js';
+import { initSurveyMetadata } from './services/survey-service.js';
 
 // Initialize application
 function initApp() {
@@ -35,6 +36,7 @@ function initApp() {
     // Initialize UI
     showEmptyState();
     updateQuestionsList();
+    initSurveyMetadata();
     
     // Expose handlers to window for inline event handlers
     window.deleteNodeHandler = deleteNode;

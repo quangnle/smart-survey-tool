@@ -1,8 +1,9 @@
-import { state, addNode, setSelectedNodeId, generateNodeId } from '../state/store.js';
+import { state, addNode, setSelectedNodeId, generateNodeId, updateSurveyTitle, updateSurveyDescription } from '../state/store.js';
 import { createNode } from '../models/node.js';
 import { renderQuestionEditor } from '../ui/question-editor.js';
 import { showEmptyState } from '../ui/question-editor.js';
 import { updateQuestionsList } from '../ui/sidebar.js';
+import { loadSurveyMetadata } from './survey-service.js';
 
 // Load survey data
 export function loadSurveyData(surveyData) {
@@ -24,6 +25,20 @@ export function loadSurveyData(surveyData) {
         state.nodes = [];
         state.nodeIdCounter = 0;
         setSelectedNodeId(null);
+        
+        // Load survey metadata (title and description)
+        const title = surveyData.title || '';
+        const description = surveyData.description || '';
+        updateSurveyTitle(title);
+        updateSurveyDescription(description);
+        loadSurveyMetadata(title, description);
+        
+        // Load chart label positions
+        if (surveyData.linkLabelPositions) {
+            state.linkLabelPositions = surveyData.linkLabelPositions;
+        } else {
+            state.linkLabelPositions = {};
+        }
         
         // Restore nodes from JSON
         surveyData.questions.forEach((qData, index) => {
