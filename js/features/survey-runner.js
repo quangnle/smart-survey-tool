@@ -304,7 +304,7 @@ export function showSurveyQuestion(nodeId) {
     const backButtonHTML = showBackButton ? `
         <div class="mb-4">
             <button class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm cursor-pointer transition-colors flex items-center gap-2" onclick="window.goBackToPreviousQuestionHandler()">
-                <span>←</span> Quay lại câu trước
+                <span>←</span> Go Back
             </button>
         </div>
     ` : '';
@@ -409,7 +409,7 @@ export function showSurveyQuestion(nodeId) {
                     </div>
                     <button class="bg-teal-700 hover:bg-teal-800 text-white w-full px-5 py-4 text-base cursor-pointer transition-all font-semibold rounded-lg"
                             onclick="window.selectSurveyAnswerHandler('${nodeId}', ${otherAnswerIndex})">
-                        Tiếp tục →
+                        Continue →
                     </button>
                     ` : ''}
                 </div>
@@ -452,6 +452,8 @@ export function goToNextQuestion(nodeId) {
         const historyIndex = state.surveyHistory.findIndex(entry => entry.questionId === nodeId);
         if (historyIndex >= 0) {
             truncateHistoryFromIndex(historyIndex);
+            // Set path modified flag to true when truncating history
+            setPathModified(true);
         }
         // Add skip to history
         addToSurveyHistory({
@@ -509,6 +511,8 @@ export function selectSurveyAnswer(nodeId, answerIndex) {
         const historyIndex = state.surveyHistory.findIndex(entry => entry.questionId === nodeId);
         if (historyIndex >= 0) {
             truncateHistoryFromIndex(historyIndex);
+            // Set path modified flag to true when truncating history
+            setPathModified(true);
         }
         // Proceed with new answer
         proceedWithAnswer(nodeId, answerIndex, answerText, answer, node);
@@ -606,6 +610,8 @@ export function submitMultipleChoice(nodeId) {
         const historyIndex = state.surveyHistory.findIndex(entry => entry.questionId === nodeId);
         if (historyIndex >= 0) {
             truncateHistoryFromIndex(historyIndex);
+            // Set path modified flag to true when truncating history
+            setPathModified(true);
         }
         // Proceed with new answer
         proceedWithMultipleChoice(nodeId, selectedIndices, selectedAnswers);

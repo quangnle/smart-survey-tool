@@ -160,4 +160,3 @@ export function getSurveyTitle() {
 export function getSurveyDescription() {
     return state.surveyDescription || '';
 }
-
