@@ -57,10 +57,10 @@ export function toggleOtherAnswer(nodeId, enabled) {
     if (enabled && !existingOther) {
         // Add "Other" answer
         node.answers.push({
-            text: 'Khác',
+            text: 'Other',
             linkedTo: null,
             isOther: true,
-            placeholder: 'ý kiến khác',
+            placeholder: 'other opinion',
             maxLength: 80
         });
     } else if (!enabled && existingOther) {

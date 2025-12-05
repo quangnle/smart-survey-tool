@@ -6,7 +6,7 @@ import { showModal, hideModal } from '../ui/modals.js';
 // Open chart modal
 export function openChartModal() {
     if (state.nodes.length === 0) {
-        alert('Chưa có câu hỏi nào để hiển thị chart!');
+        alert('No questions to display in chart!');
         return;
     }
     
@@ -98,7 +98,7 @@ export function renderChart() {
         nodeMap.set(node.id, {
             id: node.id,
             label: node.isInfoNode ? `I${index + 1}` : `Q${index + 1}`,
-            question: node.question || 'Chưa có nội dung',
+            question: node.question || 'No content',
             index: index,
             isInfoNode: node.isInfoNode || false,
             x: node.position.x,
@@ -146,7 +146,7 @@ export function renderChart() {
                         .filter(idx => idx >= 0 && node.answers[idx]) // Filter out placeholder indices
                         .map(idx => {
                             const answer = node.answers[idx];
-                            return answer.text.trim() || `Câu ${idx + 1}`;
+                            return answer.text.trim() || `Answer ${idx + 1}`;
                         })
                         .join(' + ');
                     
@@ -168,7 +168,7 @@ export function renderChart() {
                 id: `link-${node.id}-next`, // Unique ID for this link
                 source: node.id,
                 target: node.nextQuestion,
-                answerText: '(Mặc định)',
+                answerText: '(Default)',
                 type: 'next'
             });
         }

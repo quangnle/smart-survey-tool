@@ -4,7 +4,7 @@ import { loadSurveyData } from './file-service-loader.js';
 // Export survey to JSON file
 export function exportSurvey() {
     if (state.nodes.length === 0) {
-        alert('Không có dữ liệu survey để lưu!');
+        alert('No survey data to save!');
         return;
     }
     
@@ -60,7 +60,7 @@ export function exportSurvey() {
     URL.revokeObjectURL(url);
     
     // Show success message
-    alert('Survey đã được lưu thành công!');
+    alert('Survey saved successfully!');
 }
 
 // Handle file load
@@ -69,7 +69,7 @@ export function handleFileLoad(event) {
     if (!file) return;
     
     if (!file.name.endsWith('.json')) {
-        alert('Vui lòng chọn file JSON!');
+        alert('Please select a JSON file!');
         return;
     }
     
@@ -79,13 +79,13 @@ export function handleFileLoad(event) {
             const jsonData = JSON.parse(e.target.result);
             loadSurveyData(jsonData);
         } catch (error) {
-            alert('Lỗi khi đọc file JSON: ' + error.message);
+            alert('Error reading JSON file: ' + error.message);
             console.error('Parse error:', error);
         }
     };
     
     reader.onerror = function() {
-        alert('Lỗi khi đọc file!');
+        alert('Error reading file!');
     };
     
     reader.readAsText(file);

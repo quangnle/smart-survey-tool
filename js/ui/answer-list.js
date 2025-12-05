@@ -31,20 +31,20 @@ export function renderAnswer(nodeId, answerIndex) {
         <div class="flex items-center gap-3">
             <div class="cursor-grab text-gray-500 text-base p-1 flex items-center justify-center flex-shrink-0 select-none" 
                  draggable="true"
-                 title="Kéo để sắp xếp">⋮⋮</div>
+                 title="Drag to reorder">⋮⋮</div>
             <input type="text" 
                    class="flex-1 px-3 py-3 border-2 border-gray-300 rounded-md text-sm font-sans transition-colors focus:outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-200" 
-                   placeholder="Nhập câu trả lời..." 
+                   placeholder="Enter answer..." 
                    value="${answer.text}"
                    oninput="window.updateAnswerHandler('${nodeId}', ${answerIndex}, this.value)">
             <button class="bg-teal-700 hover:bg-teal-800 ${answer.linkedTo ? 'bg-teal-600' : ''} text-white w-8 h-8 rounded-md cursor-pointer text-base flex items-center justify-center transition-colors flex-shrink-0" 
                     onclick="window.openLinkModalHandler('${nodeId}', ${answerIndex})" 
-                    title="${answer.linkedTo ? 'Thay đổi liên kết' : 'Liên kết tới câu hỏi khác'}">
+                    title="${answer.linkedTo ? 'Change link' : 'Link to another question'}">
                 🔗
             </button>
             <button class="bg-red-500 hover:bg-red-600 text-white w-8 h-8 rounded-md cursor-pointer text-sm flex items-center justify-center transition-colors flex-shrink-0" 
                     onclick="window.deleteAnswerHandler('${nodeId}', ${answerIndex})" 
-                    title="Xóa câu trả lời">
+                    title="Delete answer">
                 ×
             </button>
         </div>
@@ -53,7 +53,7 @@ export function renderAnswer(nodeId, answerIndex) {
             <span class="text-xs text-teal-700 italic">→ ${linkedToText}</span>
             <button class="bg-red-500 hover:bg-red-600 text-white w-5 h-5 rounded-full cursor-pointer text-xs flex items-center justify-center transition-colors flex-shrink-0" 
                     onclick="window.unlinkAnswerHandler('${nodeId}', ${answerIndex})" 
-                    title="Xóa liên kết">
+                    title="Remove link">
                 ×
             </button>
         </div>

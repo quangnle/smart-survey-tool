@@ -11,7 +11,7 @@ export function updateQuestionsList() {
     if (state.nodes.length === 0) {
         const emptyItem = document.createElement('div');
         emptyItem.className = 'text-xs text-gray-500 italic p-5 text-center';
-        emptyItem.textContent = 'Chưa có câu hỏi nào';
+        emptyItem.textContent = 'No questions yet';
         dom.questionsList.appendChild(emptyItem);
         return;
     }
@@ -32,7 +32,7 @@ export function updateQuestionsList() {
         listItem.dataset.nodeId = node.id;
         listItem.dataset.index = index;
         
-        const preview = node.question.trim() || 'Câu hỏi chưa có nội dung';
+        const preview = node.question.trim() || 'Question has no content';
         const previewText = preview.length > 40 ? preview.substring(0, 40) + '...' : preview;
         
         // Different number badge color for info nodes
@@ -48,12 +48,12 @@ export function updateQuestionsList() {
         listItem.innerHTML = `
             <div class="flex items-center justify-between w-full">
                 <div class="flex items-center flex-1 min-w-0" style="flex: 1;">
-                    <span class="${numberBadgeClasses}" title="${isInfoNode ? 'Thông báo' : 'Câu hỏi'}">${index + 1}</span>
+                    <span class="${numberBadgeClasses}" title="${isInfoNode ? 'Notification' : 'Question'}">${index + 1}</span>
                     <span class="flex-1 text-xs ${isActive ? 'text-white' : isInfoNode ? 'text-yellow-900' : 'text-teal-900'} break-words truncate">${previewText}</span>
                 </div>
                 <button class="bg-red-500 hover:bg-red-600 text-white w-6 h-6 rounded-full cursor-pointer text-xs flex items-center justify-center transition-all hover:scale-110 flex-shrink-0 ml-2" 
                         onclick="event.stopPropagation(); window.deleteNodeHandler('${node.id}')" 
-                        title="Xóa câu hỏi">
+                        title="Delete question">
                     ×
                 </button>
             </div>

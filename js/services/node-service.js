@@ -16,7 +16,7 @@ export function createNewNode() {
 
 // Delete a node
 export function deleteNode(nodeId) {
-    if (confirm('Bạn có chắc muốn xóa câu hỏi này?')) {
+    if (confirm('Are you sure you want to delete this question?')) {
         // Remove all links pointing to this node
         removeAllLinksToNode(nodeId);
         

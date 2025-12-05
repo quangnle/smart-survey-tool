@@ -19,7 +19,7 @@ export function updateSurveyInfoDisplay() {
     const titleDisplay = document.getElementById('surveyInfoTitleDisplay');
     if (titleDisplay) {
         const title = getSurveyTitle();
-        titleDisplay.textContent = title.trim() || 'Chưa có tiêu đề';
+        titleDisplay.textContent = title.trim() || 'No title yet';
     }
 }
 

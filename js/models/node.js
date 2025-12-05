@@ -41,7 +41,7 @@ export function getQuestionPreview(nodeId) {
     const node = state.nodes.find(n => n.id === nodeId);
     if (!node) return '';
     
-    const text = node.question.trim() || 'Câu hỏi chưa có nội dung';
+    const text = node.question.trim() || 'Question has no content';
     return text.length > 30 ? text.substring(0, 30) + '...' : text;
 }
 

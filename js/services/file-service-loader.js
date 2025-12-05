@@ -9,13 +9,13 @@ import { loadSurveyMetadata } from './survey-service.js';
 export function loadSurveyData(surveyData) {
     // Validate data structure
     if (!surveyData.questions || !Array.isArray(surveyData.questions)) {
-        alert('File JSON không đúng định dạng!');
+        alert('JSON file format is incorrect!');
         return;
     }
     
     // Confirm before loading (will overwrite current data)
     if (state.nodes.length > 0) {
-        if (!confirm('Load survey mới sẽ thay thế survey hiện tại. Bạn có chắc muốn tiếp tục?')) {
+        if (!confirm('Loading a new survey will replace the current survey. Are you sure you want to continue?')) {
             return;
         }
     }
@@ -140,10 +140,10 @@ export function loadSurveyData(surveyData) {
             renderQuestionEditor(state.nodes[0].id);
         }
         
-        alert(`Đã load thành công ${state.nodes.length} câu hỏi!`);
+        alert(`Successfully loaded ${state.nodes.length} questions!`);
         
     } catch (error) {
-        alert('Lỗi khi load survey: ' + error.message);
+        alert('Error loading survey: ' + error.message);
         console.error('Load error:', error);
     }
 }

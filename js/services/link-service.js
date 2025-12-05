@@ -21,7 +21,7 @@ export function openLinkModal(nodeId, answerIndex) {
     );
     
     if (availableNodes.length === 0) {
-        dom.questionList.innerHTML = '<p class="text-center text-gray-500 p-5">Chưa có câu hỏi nào để liên kết</p>';
+        dom.questionList.innerHTML = '<p class="text-center text-gray-500 p-5">No questions available to link</p>';
     } else {
         availableNodes.forEach(targetNode => {
             const questionItem = document.createElement('div');
@@ -106,7 +106,7 @@ export function openNextQuestionModal(nodeId) {
     );
     
     if (availableNodes.length === 0) {
-        dom.questionList.innerHTML = '<p class="text-center text-gray-500 p-5">Chưa có câu hỏi nào để liên kết</p>';
+        dom.questionList.innerHTML = '<p class="text-center text-gray-500 p-5">No questions available to link</p>';
     } else {
         availableNodes.forEach(targetNode => {
             const questionItem = document.createElement('div');
@@ -156,7 +156,7 @@ export function openRuleLinkModal(nodeId, ruleIndex) {
     );
     
     if (availableNodes.length === 0) {
-        dom.questionList.innerHTML = '<p class="text-center text-gray-500 p-5">Chưa có câu hỏi nào để liên kết</p>';
+        dom.questionList.innerHTML = '<p class="text-center text-gray-500 p-5">No questions available to link</p>';
     } else {
         availableNodes.forEach(targetNode => {
             const questionItem = document.createElement('div');
