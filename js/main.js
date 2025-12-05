@@ -2,7 +2,7 @@
 import { initDOMElements, dom } from './config/dom-elements.js';
 import { initModalHandlers } from './ui/modals.js';
 import { createNewNode } from './services/node-service.js';
-import { startSurvey, showSurveyEnd, showReviewAnswers, closeSurvey, goToNextQuestion, selectSurveyAnswer, submitMultipleChoice, handleOtherInput } from './features/survey-runner.js';
+import { startSurvey, showSurveyEnd, showReviewAnswers, closeSurvey, goToNextQuestion, selectSurveyAnswer, submitMultipleChoice, handleOtherInput, goBackToPreviousQuestion } from './features/survey-runner.js';
 import { exportSurvey, handleFileLoad } from './services/file-service.js';
 import { openChartModal, closeChartModal } from './features/chart-visualizer.js';
 import { closeLinkModal, openNextQuestionModal, unlinkNextQuestion, openLinkModal, openRuleLinkModal, unlinkAnswer } from './services/link-service.js';
@@ -57,6 +57,7 @@ function initApp() {
     window.showReviewAnswersHandler = showReviewAnswers;
     window.goToNextQuestionHandler = goToNextQuestion;
     window.selectSurveyAnswerHandler = selectSurveyAnswer;
+    window.goBackToPreviousQuestionHandler = goBackToPreviousQuestion;
     
     // Multiple choice and rules handlers
     window.toggleMultipleChoiceHandler = toggleMultipleChoice;

@@ -1,4 +1,4 @@
-import { state, getNode, resetSurveyState, addToSurveyHistory, getSurveyTitle, getSurveyDescription } from '../state/store.js';
+import { state, getNode, resetSurveyState, addToSurveyHistory, getSurveyTitle, getSurveyDescription, truncateHistoryFromIndex, setPathModified, canGoBack, pushToNavigationStack, popFromNavigationStack, peekNavigationStack, getHistoryEntryByNodeId, truncateNavigationStackFromIndex } from '../state/store.js';
 import { dom } from '../config/dom-elements.js';
 import { hasAnyLink } from '../models/node.js';
 import { showModal, hideModal } from '../ui/modals.js';
@@ -178,6 +178,16 @@ export function showSurveyQuestion(nodeId) {
     // Handle info node (content only, no answers)
     if (node.isInfoNode) {
         const infoStyles = getInfoNodeStyles(node.infoType);
+        const showBackButton = canGoBack();
+        
+        // Back button HTML
+        const backButtonHTML = showBackButton ? `
+            <div class="mb-4">
+                <button class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm cursor-pointer transition-colors flex items-center gap-2" onclick="window.goBackToPreviousQuestionHandler()">
+                    <span>←</span> Quay lại câu trước
+                </button>
+            </div>
+        ` : '';
         
         if (isEndNode) {
             // End node - show end button
@@ -188,6 +198,7 @@ export function showSurveyQuestion(nodeId) {
             }
             surveyBody.innerHTML = `
                 ${headerHTML}
+                ${backButtonHTML}
                 <div class="mb-8 text-center p-10">
                     <div class="text-xl ${infoStyles.text} ${infoStyles.bg} p-5 rounded-lg border-2 ${infoStyles.border} mb-8 whitespace-pre-wrap">${formatTextWithLineBreaks(node.question || 'Thông báo chưa có nội dung')}</div>
                     <div class="mt-8">
@@ -206,6 +217,7 @@ export function showSurveyQuestion(nodeId) {
             }
             surveyBody.innerHTML = `
                 ${headerHTML}
+                ${backButtonHTML}
                 <div class="mb-8 text-center p-10">
                     <div class="text-xl ${infoStyles.text} ${infoStyles.bg} p-5 rounded-lg border-2 ${infoStyles.border} mb-8 whitespace-pre-wrap">${formatTextWithLineBreaks(node.question || 'Thông báo chưa có nội dung')}</div>
                     <div class="mt-8">
@@ -273,32 +285,63 @@ export function showSurveyQuestion(nodeId) {
     // Show hint if some answers have links and question also has nextQuestion
     const showNextQuestionHint = node.nextQuestion && hasAnswerLinks && answersWithoutLinks.length > 0;
     
+    // Restore answer from history if exists
+    const historyEntry = restoreAnswerFromHistory(nodeId);
+    const showBackButton = canGoBack();
+    const pathModifiedWarning = state.isPathModified ? `
+        <div class="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-500 rounded text-sm text-yellow-800">
+            <strong>⚠️ Lưu ý:</strong> Bạn đã thay đổi lựa chọn. Path mới sẽ được tạo từ đây.
+        </div>
+    ` : '';
+    
     const surveyBody = document.getElementById('surveyBody');
     if (!surveyBody) {
         console.error('surveyBody element not found!');
         return;
     }
     
+    // Back button HTML
+    const backButtonHTML = showBackButton ? `
+        <div class="mb-4">
+            <button class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm cursor-pointer transition-colors flex items-center gap-2" onclick="window.goBackToPreviousQuestionHandler()">
+                <span>←</span> Quay lại câu trước
+            </button>
+        </div>
+    ` : '';
+    
     // Render based on multiple choice or single choice
     if (isMultipleChoice) {
         // Multiple choice: use checkboxes
         const otherAnswerIndex = otherAnswer ? node.answers.indexOf(otherAnswer) : -1;
         const regularAnswers = validAnswers.filter(a => !a.isOther);
+        // Restore multiple choice selections
+        const restoredIndices = historyEntry && Array.isArray(historyEntry.answerIndex) 
+            ? historyEntry.answerIndex 
+            : (historyEntry && !Array.isArray(historyEntry.answerIndex) ? [historyEntry.answerIndex] : []);
+        const restoredOtherText = historyEntry && historyEntry.answer && historyEntry.answer.includes(': ') 
+            ? historyEntry.answer.split(': ').slice(1).join(': ') 
+            : '';
+        
         surveyBody.innerHTML = `
             ${headerHTML}
+            ${backButtonHTML}
+            ${pathModifiedWarning}
             <div class="mb-8">
                 <div class="text-2xl font-semibold text-teal-900 mb-6 leading-snug whitespace-pre-wrap">${formatTextWithLineBreaks(node.question || 'Câu hỏi chưa có nội dung')}</div>
                 <p class="text-sm text-gray-600 mb-4 italic">Bạn có thể chọn nhiều câu trả lời:</p>
                 <div class="flex flex-col gap-3 mb-6">
                     ${regularAnswers.map((answer, index) => {
                         const answerIndex = node.answers.indexOf(answer);
+                        const isChecked = restoredIndices.includes(answerIndex);
                         return `
-                        <label class="flex items-center gap-3 p-4 bg-gray-50 border-2 border-gray-300 rounded-lg cursor-pointer hover:bg-gray-100 transition-all">
+                        <label class="flex items-center gap-3 p-4 bg-gray-50 border-2 ${isChecked ? 'border-teal-500 bg-teal-50' : 'border-gray-300'} rounded-lg cursor-pointer hover:bg-gray-100 transition-all">
                             <input type="checkbox" 
                                    class="w-5 h-5 cursor-pointer accent-teal-600" 
                                    value="${answerIndex}"
-                                   data-answer-index="${answerIndex}">
+                                   data-answer-index="${answerIndex}"
+                                   ${isChecked ? 'checked' : ''}>
                             <span class="flex-1 text-base text-teal-900">${answer.text}</span>
+                            ${isChecked ? '<span class="text-xs text-teal-600 font-semibold">(Đã chọn trước đó)</span>' : ''}
                         </label>
                     `;
                     }).join('')}
@@ -310,12 +353,14 @@ export function showSurveyQuestion(nodeId) {
                                class="w-full px-3 py-2 border-2 border-gray-300 rounded-md text-sm focus:outline-none focus:border-teal-600"
                                placeholder="${otherAnswer.placeholder || 'ý kiến khác'}"
                                maxlength="${otherAnswer.maxLength || 80}"
+                               value="${restoredOtherText}"
                                oninput="window.handleOtherInputHandler('${nodeId}')">
                     </div>
                     ` : ''}
                 </div>
-                <button class="bg-teal-700 hover:bg-teal-800 text-white w-full rounded-lg px-5 py-4 text-base cursor-pointer transition-all font-semibold" 
-                        onclick="window.submitMultipleChoiceHandler('${nodeId}')">
+                <button class="bg-teal-700 hover:bg-teal-800 text-white w-full rounded-lg px-5 py-4 text-base cursor-pointer transition-all font-semibold ${state.isPathModified ? 'opacity-75' : ''}" 
+                        onclick="window.submitMultipleChoiceHandler('${nodeId}')"
+                        ${state.isPathModified ? 'title="Bạn đã thay đổi lựa chọn. Vui lòng xác nhận để tiếp tục."' : ''}>
                     Tiếp tục →
                 </button>
             </div>
@@ -324,30 +369,43 @@ export function showSurveyQuestion(nodeId) {
         // Single choice: use radio buttons (original behavior)
         const otherAnswerIndex = otherAnswer ? node.answers.indexOf(otherAnswer) : -1;
         const regularAnswers = validAnswers.filter(a => !a.isOther);
+        
+        // Restore single choice selection
+        const restoredIndex = historyEntry ? historyEntry.answerIndex : -1;
+        const restoredOtherText = historyEntry && historyEntry.answer && historyEntry.answer.includes(': ') 
+            ? historyEntry.answer.split(': ').slice(1).join(': ') 
+            : '';
+        
         surveyBody.innerHTML = `
             ${headerHTML}
+            ${backButtonHTML}
+            ${pathModifiedWarning}
             <div class="mb-8">
                 <div class="text-2xl font-semibold text-teal-900 mb-6 leading-snug whitespace-pre-wrap">${formatTextWithLineBreaks(node.question || 'Câu hỏi chưa có nội dung')}</div>
                 <div class="flex flex-col gap-3">
                     ${regularAnswers.map((answer, index) => {
                         const hasLink = answer.linkedTo;
                         const answerIndex = node.answers.indexOf(answer);
+                        const isSelected = restoredIndex === answerIndex;
                         return `
-                        <button class="bg-gray-50 hover:bg-teal-800 hover:border-teal-800 hover:text-white border-2 border-gray-300 hover:border-teal-800 rounded-lg px-5 py-4 text-base text-teal-900 hover:text-white cursor-pointer transition-all hover:translate-x-1 text-left font-sans ${!hasLink ? 'opacity-90' : ''}" onclick="window.selectSurveyAnswerHandler('${nodeId}', ${answerIndex})">
+                        <button class="bg-gray-50 hover:bg-teal-800 hover:border-teal-800 hover:text-white border-2 ${isSelected ? 'border-teal-500 bg-teal-50' : 'border-gray-300'} hover:border-teal-800 rounded-lg px-5 py-4 text-base text-teal-900 hover:text-white cursor-pointer transition-all hover:translate-x-1 text-left font-sans ${!hasLink ? 'opacity-90' : ''}" onclick="window.selectSurveyAnswerHandler('${nodeId}', ${answerIndex})">
                             ${answer.text}
                             ${hasLink ? '<span class="text-xs opacity-70 ml-2">→</span>' : ''}
+                            ${isSelected ? '<span class="text-xs text-teal-600 font-semibold ml-2">(Đã chọn trước đó)</span>' : ''}
                         </button>
                     `;
                     }).join('')}
                     ${otherAnswer ? `
-                    <div class="bg-gray-50 border-2 border-gray-300 rounded-lg p-4 mb-3">
+                    <div class="bg-gray-50 border-2 ${restoredIndex === otherAnswerIndex ? 'border-teal-500 bg-teal-50' : 'border-gray-300'} rounded-lg p-4 mb-3">
                         <label class="text-base text-teal-900 mb-2 block">${otherAnswer.text || 'Khác'}:</label>
                         <input type="text" 
                                id="other-input-${nodeId}"
                                class="w-full px-3 py-2 border-2 border-gray-300 rounded-md text-sm focus:outline-none focus:border-teal-600"
                                placeholder="${otherAnswer.placeholder || 'ý kiến khác'}"
                                maxlength="${otherAnswer.maxLength || 80}"
+                               value="${restoredOtherText}"
                                onkeypress="if(event.key === 'Enter') window.selectSurveyAnswerHandler('${nodeId}', ${otherAnswerIndex})">
+                        ${restoredIndex === otherAnswerIndex ? '<span class="text-xs text-teal-600 font-semibold mt-1 block">(Đã chọn trước đó)</span>' : ''}
                     </div>
                     <button class="bg-teal-700 hover:bg-teal-800 text-white w-full px-5 py-4 text-base cursor-pointer transition-all font-semibold rounded-lg"
                             onclick="window.selectSurveyAnswerHandler('${nodeId}', ${otherAnswerIndex})">
@@ -384,13 +442,36 @@ export function goToNextQuestion(nodeId) {
     const node = getNode(nodeId);
     if (!node || !node.nextQuestion) return;
     
-    // Add to history
-    addToSurveyHistory({
-        questionId: nodeId,
-        question: node.question,
-        answer: '(Bỏ qua)',
-        answerIndex: -1
-    });
+    // Check if user previously answered this question (not skipped)
+    const historyEntry = restoreAnswerFromHistory(nodeId);
+    const hasChanged = historyEntry && historyEntry.answerIndex !== -1;
+    
+    if (hasChanged) {
+        // User previously answered, now skipping - this is a change
+        // Find the history index for this nodeId to truncate from
+        const historyIndex = state.surveyHistory.findIndex(entry => entry.questionId === nodeId);
+        if (historyIndex >= 0) {
+            truncateHistoryFromIndex(historyIndex);
+        }
+        // Add skip to history
+        addToSurveyHistory({
+            questionId: nodeId,
+            question: node.question,
+            answer: '(Bỏ qua)',
+            answerIndex: -1
+        });
+    } else {
+        // No change (either no history or was also skipped before)
+        addToSurveyHistory({
+            questionId: nodeId,
+            question: node.question,
+            answer: '(Bỏ qua)',
+            answerIndex: -1
+        });
+    }
+    
+    // Push current node to navigation stack before moving forward
+    pushToNavigationStack(nodeId);
     
     state.currentSurveyNodeId = node.nextQuestion;
     showSurveyQuestion(node.nextQuestion);
@@ -405,9 +486,10 @@ export function selectSurveyAnswer(nodeId, answerIndex) {
     
     // Handle "Other" answer - check if has text input
     let answerText = answer.text;
+    let otherText = '';
     if (answer.isOther) {
         const otherInput = document.getElementById(`other-input-${nodeId}`);
-        const otherText = otherInput ? otherInput.value.trim() : '';
+        otherText = otherInput ? otherInput.value.trim() : '';
         // If "Other" is selected but no text entered, don't proceed
         if (!otherText) {
             // Focus on the input to prompt user
@@ -419,6 +501,25 @@ export function selectSurveyAnswer(nodeId, answerIndex) {
         answerText = `${answer.text}: ${otherText}`;
     }
     
+    // Check if answer has changed
+    const hasChanged = detectSingleChoiceChange(nodeId, answerIndex, otherText);
+    
+    if (hasChanged) {
+        // Find the history index for this nodeId to truncate from
+        const historyIndex = state.surveyHistory.findIndex(entry => entry.questionId === nodeId);
+        if (historyIndex >= 0) {
+            truncateHistoryFromIndex(historyIndex);
+        }
+        // Proceed with new answer
+        proceedWithAnswer(nodeId, answerIndex, answerText, answer, node);
+    } else {
+        // No change, proceed normally
+        proceedWithAnswer(nodeId, answerIndex, answerText, answer, node);
+    }
+}
+
+// Helper function to proceed with answer (single choice)
+function proceedWithAnswer(nodeId, answerIndex, answerText, answer, node) {
     // Add to history
     addToSurveyHistory({
         questionId: nodeId,
@@ -426,6 +527,9 @@ export function selectSurveyAnswer(nodeId, answerIndex) {
         answer: answerText,
         answerIndex: answerIndex
     });
+    
+    // Push current node to navigation stack before moving forward
+    pushToNavigationStack(nodeId);
     
     // Priority: Answer link > NextQuestion link
     // 1. If answer has a link, use it (highest priority)
@@ -473,9 +577,10 @@ export function submitMultipleChoice(nodeId) {
     
     // Check "Other" input - if has text, consider it selected
     const otherAnswer = node.answers.find(a => a.isOther);
+    let otherText = '';
     if (otherAnswer) {
         const otherInput = document.getElementById(`other-input-${nodeId}`);
-        const otherText = otherInput ? otherInput.value.trim() : '';
+        otherText = otherInput ? otherInput.value.trim() : '';
         if (otherText) {
             const otherIndex = node.answers.indexOf(otherAnswer);
             if (!selectedIndices.includes(otherIndex)) {
@@ -493,6 +598,28 @@ export function submitMultipleChoice(nodeId) {
         }
     }
     
+    // Check if answer has changed
+    const hasChanged = detectMultipleChoiceChange(nodeId, selectedIndices, otherText);
+    
+    if (hasChanged) {
+        // Find the history index for this nodeId to truncate from
+        const historyIndex = state.surveyHistory.findIndex(entry => entry.questionId === nodeId);
+        if (historyIndex >= 0) {
+            truncateHistoryFromIndex(historyIndex);
+        }
+        // Proceed with new answer
+        proceedWithMultipleChoice(nodeId, selectedIndices, selectedAnswers);
+    } else {
+        // No change, proceed normally
+        proceedWithMultipleChoice(nodeId, selectedIndices, selectedAnswers);
+    }
+}
+
+// Helper function to proceed with multiple choice answer
+function proceedWithMultipleChoice(nodeId, selectedIndices, selectedAnswers) {
+    const node = getNode(nodeId);
+    if (!node) return;
+    
     // Add to history
     addToSurveyHistory({
         questionId: nodeId,
@@ -500,6 +627,9 @@ export function submitMultipleChoice(nodeId) {
         answer: selectedAnswers.join(', '),
         answerIndex: selectedIndices
     });
+    
+    // Push current node to navigation stack before moving forward
+    pushToNavigationStack(nodeId);
     
     // Process selection with rules → priority → nextQuestion logic
     const nextNodeId = processMultipleChoiceSelection(nodeId, selectedIndices);
@@ -541,20 +671,62 @@ export function showReviewAnswers() {
         return;
     }
     
-    const reviewHTML = state.surveyHistory.map((item, index) => {
+    // Build a map of the last entry for each questionId to avoid duplicates
+    const lastEntryMap = new Map();
+    state.surveyHistory.forEach((item, index) => {
+        // Keep only the last entry for each questionId
+        lastEntryMap.set(item.questionId, { item, originalIndex: index });
+    });
+    
+    // Use navigationStack to maintain correct order and get unique entries
+    const uniqueEntries = [];
+    const seenNodeIds = new Set();
+    
+    // First, add entries from navigationStack in order (these are the actual path taken)
+    state.navigationStack.forEach(stackItem => {
+        if (!seenNodeIds.has(stackItem.nodeId)) {
+            const historyEntry = state.surveyHistory[stackItem.historyIndex];
+            if (historyEntry) {
+                // Check if this is an info node - skip it
+                const node = getNode(historyEntry.questionId);
+                if (node && !node.isInfoNode) {
+                    uniqueEntries.push(historyEntry);
+                    seenNodeIds.add(stackItem.nodeId);
+                }
+            }
+        }
+    });
+    
+    // If navigationStack is empty or incomplete, fall back to lastEntryMap
+    if (uniqueEntries.length === 0) {
+        lastEntryMap.forEach(({ item }) => {
+            // Check if this is an info node - skip it
+            const node = getNode(item.questionId);
+            if (node && !node.isInfoNode) {
+                uniqueEntries.push(item);
+            }
+        });
+    }
+    
+    // Filter out any remaining info nodes just to be safe
+    const filteredEntries = uniqueEntries.filter(item => {
+        const node = getNode(item.questionId);
+        return node && !node.isInfoNode;
+    });
+    
+    const reviewHTML = filteredEntries.map((item, index) => {
         const node = getNode(item.questionId);
         const nodeIndex = node ? state.nodes.indexOf(node) + 1 : index + 1;
-        const isInfoNode = node ? node.isInfoNode : false;
         
         return `
             <div class="bg-white border-2 border-gray-200 rounded-lg p-5 transition-all hover:border-teal-600 hover:shadow-md">
                 <div class="flex items-center gap-2.5 mb-4 pb-2.5 border-b border-gray-200">
                     <span class="inline-flex items-center justify-center w-8 h-8 bg-teal-800 text-white rounded-full font-bold text-sm flex-shrink-0">${index + 1}</span>
-                    <span class="text-xs text-gray-500 font-semibold uppercase">${isInfoNode ? 'Thông báo' : 'Câu hỏi'} #${nodeIndex}</span>
+                    <span class="text-xs text-gray-500 font-semibold uppercase">Câu hỏi #${nodeIndex}</span>
                 </div>
                 <div class="text-base font-semibold text-teal-900 mb-3 leading-relaxed whitespace-pre-wrap">${formatTextWithLineBreaks(item.question || 'Chưa có nội dung')}</div>
                 <div class="text-sm text-teal-800 leading-relaxed p-3 bg-gray-50 rounded-md border-l-4 border-teal-700">
-                    <strong class="text-teal-700 mr-2">${isInfoNode ? 'Nội dung:' : 'Đã chọn:'}</strong> 
+                    <strong class="text-teal-700 mr-2">Đã chọn:</strong> 
                     <span>${item.answer}</span>
                 </div>
             </div>
@@ -570,7 +742,7 @@ export function showReviewAnswers() {
         <div class="p-5">
             <div class="text-center mb-8 pb-5 border-b-2 border-gray-200">
                 <h3 class="text-2xl text-teal-900 mb-2.5">📋 Xem lại câu trả lời</h3>
-                <p class="text-sm text-gray-500 m-0">Tổng cộng: ${state.surveyHistory.length} ${state.surveyHistory.length === 1 ? 'câu trả lời' : 'câu trả lời'}</p>
+                <p class="text-sm text-gray-500 m-0">Tổng cộng: ${filteredEntries.length} ${filteredEntries.length === 1 ? 'câu trả lời' : 'câu trả lời'}</p>
             </div>
             <div class="flex flex-col gap-5 max-h-[calc(90vh-250px)] overflow-y-auto p-2.5">
                 ${reviewHTML}
@@ -587,4 +759,96 @@ export function closeSurvey() {
     hideModal(dom.surveyModal);
     resetSurveyState();
 }
+
+// Go back to previous question
+export function goBackToPreviousQuestion() {
+    if (!canGoBack()) return;
+    
+    // Pop from navigation stack to get previous question
+    const previousStackItem = popFromNavigationStack();
+    if (!previousStackItem) {
+        // If no stack item, go to first question
+        if (state.nodes.length > 0) {
+            state.currentSurveyNodeId = state.nodes[0].id;
+            setPathModified(false);
+            showSurveyQuestion(state.nodes[0].id);
+        }
+        return;
+    }
+    
+    // Go to previous question
+    state.currentSurveyNodeId = previousStackItem.nodeId;
+    setPathModified(false);
+    
+    // Show question - restoreAnswerFromHistory will find the entry by nodeId
+    showSurveyQuestion(previousStackItem.nodeId);
+}
+
+// Restore answer from history
+function restoreAnswerFromHistory(nodeId) {
+    // Find history entry by nodeId
+    return getHistoryEntryByNodeId(nodeId);
+}
+
+// Detect if answer has changed (single choice)
+function detectSingleChoiceChange(nodeId, answerIndex, otherText = '') {
+    const historyEntry = restoreAnswerFromHistory(nodeId);
+    if (!historyEntry) return false; // No history, not a change
+    
+    const node = getNode(nodeId);
+    if (!node) return false;
+    
+    // Compare answer index
+    if (historyEntry.answerIndex !== answerIndex) {
+        return true;
+    }
+    
+    // If "Other" answer, compare text
+    if (answerIndex >= 0 && node.answers[answerIndex] && node.answers[answerIndex].isOther) {
+        const historyText = historyEntry.answer || '';
+        const currentText = otherText || '';
+        // Extract text after ": " from history (format: "Khác: text")
+        const historyOtherText = historyText.includes(': ') ? historyText.split(': ').slice(1).join(': ') : '';
+        if (historyOtherText !== currentText) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+// Detect if answer has changed (multiple choice)
+function detectMultipleChoiceChange(nodeId, selectedIndices, otherText = '') {
+    const historyEntry = restoreAnswerFromHistory(nodeId);
+    if (!historyEntry) return false; // No history, not a change
+    
+    // Compare answer indices
+    const historyIndices = Array.isArray(historyEntry.answerIndex) 
+        ? [...historyEntry.answerIndex].sort((a, b) => a - b)
+        : [historyEntry.answerIndex];
+    const currentIndices = [...selectedIndices].sort((a, b) => a - b);
+    
+    if (!arraysMatchExactly(historyIndices, currentIndices)) {
+        return true;
+    }
+    
+    // Check "Other" text if present
+    const node = getNode(nodeId);
+    if (node && otherText) {
+        const otherAnswer = node.answers.find(a => a.isOther);
+        if (otherAnswer && currentIndices.includes(node.answers.indexOf(otherAnswer))) {
+            const historyText = historyEntry.answer || '';
+            // Extract text after ": " from history
+            const historyOtherText = historyText.includes(': ') 
+                ? historyText.split(': ').slice(1).join(': ') 
+                : '';
+            if (historyOtherText !== otherText) {
+                return true;
+            }
+        }
+    }
+    
+    return false;
+}
+
 

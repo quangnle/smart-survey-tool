@@ -11,7 +11,9 @@ export const state = {
     surveyDescription: '',
     // Survey state
     currentSurveyNodeId: null,
-    surveyHistory: []
+    surveyHistory: [],
+    navigationStack: [], // Stack để track navigation path: [{nodeId, historyIndex}]
+    isPathModified: false    // Flag: có thay đổi lựa chọn từ điểm back không
 };
 
 // Node operations
@@ -59,10 +61,76 @@ export function getSelectedNode() {
 export function resetSurveyState() {
     state.currentSurveyNodeId = null;
     state.surveyHistory = [];
+    state.navigationStack = [];
+    state.isPathModified = false;
 }
 
 export function addToSurveyHistory(entry) {
     state.surveyHistory.push(entry);
+    state.isPathModified = false;
+}
+
+// Navigation stack operations
+export function pushToNavigationStack(nodeId) {
+    // Find the history index for this nodeId (should be the last entry with this nodeId)
+    let historyIndex = -1;
+    for (let i = state.surveyHistory.length - 1; i >= 0; i--) {
+        if (state.surveyHistory[i].questionId === nodeId) {
+            historyIndex = i;
+            break;
+        }
+    }
+    // If not found, use the last history index (the entry we just added)
+    if (historyIndex < 0) {
+        historyIndex = state.surveyHistory.length - 1;
+    }
+    state.navigationStack.push({
+        nodeId: nodeId,
+        historyIndex: historyIndex
+    });
+}
+
+export function popFromNavigationStack() {
+    if (state.navigationStack.length > 0) {
+        return state.navigationStack.pop();
+    }
+    return null;
+}
+
+export function peekNavigationStack() {
+    if (state.navigationStack.length > 0) {
+        return state.navigationStack[state.navigationStack.length - 1];
+    }
+    return null;
+}
+
+export function canGoBack() {
+    return state.navigationStack.length > 0;
+}
+
+export function truncateNavigationStackFromIndex(index) {
+    if (index >= 0 && index < state.navigationStack.length) {
+        state.navigationStack = state.navigationStack.slice(0, index + 1);
+    }
+}
+
+export function getHistoryEntryByNodeId(nodeId) {
+    return state.surveyHistory.find(entry => entry.questionId === nodeId) || null;
+}
+
+export function truncateHistoryFromIndex(index) {
+    if (index >= 0 && index < state.surveyHistory.length) {
+        state.surveyHistory = state.surveyHistory.slice(0, index + 1);
+        // Also truncate navigation stack to match
+        const stackIndex = state.navigationStack.findIndex(item => item.historyIndex > index);
+        if (stackIndex >= 0) {
+            state.navigationStack = state.navigationStack.slice(0, stackIndex);
+        }
+    }
+}
+
+export function setPathModified(modified) {
+    state.isPathModified = modified;
 }
 
 // Linking state
